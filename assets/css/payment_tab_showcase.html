@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Tab Design Showcase</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="payment_tab.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f9fafb;
+            padding: 2rem;
+        }
+
+        .showcase-section {
+            background: white;
+            border-radius: 0.75rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .showcase-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: #1f2937;
+        }
+
+        .showcase-subtitle {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin-bottom: 1.5rem;
+        }
+
+        .component-demo {
+            padding: 1.5rem;
+            border: 2px dashed #e5e7eb;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .code-snippet {
+            background: #1f2937;
+            color: #e5e7eb;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+            overflow-x: auto;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="max-w-6xl mx-auto">
+        <header class="mb-8">
+            <h1 class="text-4xl font-bold text-gray-900 mb-2">Payment Tab Design Showcase</h1>
+            <p class="text-gray-600">Interactive preview of all payment tab components and styles</p>
+        </header>
+        <!-- Color Palette -->
+        <section class="showcase-section">
+            <h2 class="showcase-title">Color Palette</h2>
+            <p class="showcase-subtitle">Contemporary colors conveying trust and sophistication</p>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                    <div class="h-24 rounded-lg" style="background: var(--payment-primary);"></div>
+                    <p class="mt-2 text-sm font-medium">Primary (Teal)</p>
+                    <p class="text-xs text-gray-500">#0d9488</p>
+                </div>
+                <div>
+                    <div class="h-24 rounded-lg" style="background: var(--payment-secondary);"></div>
+                    <p class="mt-2 text-sm font-medium">Secondary (Indigo)</p>
+                    <p class="text-xs text-gray-500">#6366f1</p>
+                </div>
+                <div>
+                    <div class="h-24 rounded-lg" style="background: var(--payment-success);"></div>
+                    <p class="mt-2 text-sm font-medium">Success (Green)</p>
+                    <p class="text-xs text-gray-500">#10b981</p>
+                </div>
+                <div>
+                    <div class="h-24 rounded-lg" style="background: var(--payment-danger);"></div>
+                    <p class="mt-2 text-sm font-medium">Danger (Red)</p>
+                    <p class="text-xs text-gray-500">#ef4444</p>
+                </div>
+            </div>
+        </section>
+        <!-- Typography -->
+        <section class="showcase-section">
+            <h2 class="showcase-title">Typography Hierarchy</h2>
+            <p class="showcase-subtitle">Modern sans-serif with clear visual hierarchy</p>
+            <div class="component-demo">
+                <div class="payments-heading mb-4">
+                    <div class="payment-animated-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 12h19.5m-19.5 3.75h19.5" />
+                        </svg>
+                    </div>
+                    <span>Payment History</span>
+                    <span class="secure-badge">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h11.25a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                        </svg> SECURE </span>
+                </div>
+                <div class="mt-4">
+                    <span class="payment-summary-label">Summary Label</span>
+                    <div class="payment-summary-value mt-1">₹12,450.00</div>
+                </div>
+            </div>
+        </section>
+        <!-- Summary Cards -->
+        <section class="showcase-section">
+            <h2 class="showcase-title">Summary Cards</h2>
+            <p class="showcase-subtitle">Animated cards with hover effects and staggered entrance</p>
+            <div class="component-demo">
+                <div class="payment-summary-grid">
+                    <div class="payment-summary-card">
+                        <span class="payment-summary-label">Total Debit</span>
+                        <span class="payment-summary-value">₹45,250.00</span>
+                    </div>
+                    <div class="payment-summary-card">
+                        <span class="payment-summary-label">Total Credit</span>
+                        <span class="payment-summary-value">₹32,800.00</span>
+                    </div>
+                    <div class="payment-summary-card">
+                        <span class="payment-summary-label">Balance</span>
+                        <span class="payment-summary-value">₹12,450.00</span>
+                    </div>
+                </div>
+            </div>
+            <div class="code-snippet"> &lt;div class="payment-summary-grid"&gt; &lt;div class="payment-summary-card"&gt; &lt;span class="payment-summary-label"&gt;Total Debit&lt;/span&gt; &lt;span class="payment-summary-value"&gt;₹45,250.00&lt;/span&gt; &lt;/div&gt; ... &lt;/div&gt; </div>
+        </section>
+        <!-- Buttons -->
+        <section class="showcase-section">
+            <h2 class="showcase-title">Call-to-Action Buttons</h2>
+            <p class="showcase-subtitle">Gradient buttons with icon animations</p>
+            <div class="component-demo">
+                <button type="button" class="payment-record-btn-secondary payment-focus-ring">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6" />
+                    </svg>
+                    <span>Record Payment</span>
+                </button>
+            </div>
+            <div class="code-snippet"> &lt;button class="payment-record-btn-secondary payment-focus-ring"&gt; &lt;svg&gt;...&lt;/svg&gt; &lt;span&gt;Record Payment&lt;/span&gt; &lt;/button&gt; </div>
+        </section>
+        <!-- Input Fields -->
+        <section class="showcase-section">
+            <h2 class="showcase-title">Input Fields & Filters</h2>
+            <p class="showcase-subtitle">Styled inputs with rounded corners and focus states</p>
+            <div class="component-demo">
+                <div class="payment-filter-bar">
+                    <label for="demoFilter">Type</label>
+                    <select id="demoFilter" class="filter-select payment-focus-ring">
+                        <option value="all">All</option>
+                        <option value="debit">Debit (+)</option>
+                        <option value="credit">Credit (-)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="code-snippet"> &lt;select class="filter-select payment-focus-ring"&gt; &lt;option value="all"&gt;All&lt;/option&gt; &lt;option value="debit"&gt;Debit (+)&lt;/option&gt; &lt;option value="credit"&gt;Credit (-)&lt;/option&gt; &lt;/select&gt; </div>
+        </section>
+        <!-- Table Preview -->
+        <section class="showcase-section">
+            <h2 class="showcase-title">Payment Table</h2>
+            <p class="showcase-subtitle">Clean, organized table with hover states</p>
+            <div class="component-demo">
+                <div class="payment-table-wrapper">
+                    <table class="payments-table" style="width: 100%;">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Amount</th>
+                                <th>Type</th>
+                                <th>Category</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>2024-11-30</td>
+                                <td><span class="amount-debit">+₹5,000.00</span></td>
+                                <td><span class="px-2.5 py-1 inline-flex text-xs font-semibold rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 border border-green-200">debit</span></td>
+                                <td>Tuition Fee</td>
+                                <td>Monthly payment</td>
+                            </tr>
+                            <tr>
+                                <td>2024-11-25</td>
+                                <td><span class="amount-credit">-₹1,500.00</span></td>
+                                <td><span class="px-2.5 py-1 inline-flex text-xs font-semibold rounded-lg bg-gradient-to-r from-red-50 to-rose-50 text-red-700 border border-red-200">credit</span></td>
+                                <td>Refund</td>
+                                <td>Book refund</td>
+                            </tr>
+                            <tr>
+                                <td>2024-11-20</td>
+                                <td><span class="amount-debit">+₹3,000.00</span></td>
+                                <td><span class="px-2.5 py-1 inline-flex text-xs font-semibold rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 text-green-700 border border-green-200">debit</span></td>
+                                <td>Admission</td>
+                                <td>Initial payment</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+        <!-- Security Elements -->
+        <section class="showcase-section">
+            <h2 class="showcase-title">Security Indicators</h2>
+            <p class="showcase-subtitle">Trust badges and security hints</p>
+            <div class="component-demo">
+                <div class="mb-4">
+                    <span class="secure-badge">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h11.25a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                        </svg> SECURE </span>
+                </div>
+                <div class="security-hint">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3m0 6h.01M16.5 9V6.75a4.5 4.5 0 10-9 0V9m-.75 12h11.25a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75A2.25 2.25 0 006.75 21z" />
+                    </svg> Payments are securely processed and encrypted.
+                </div>
+            </div>
+        </section>
+        <!-- Mobile Preview -->
+        <section class="showcase-section">
+            <h2 class="showcase-title">Mobile Responsiveness</h2>
+            <p class="showcase-subtitle">Optimized for all screen sizes</p>
+            <div class="component-demo">
+                <div style="max-width: 375px; margin: 0 auto;">
+                    <div class="payment-gradient" style="padding: 1rem;">
+                        <div class="payment-summary-grid" style="grid-template-columns: 1fr; gap: 0.75rem;">
+                            <div class="payment-summary-card">
+                                <span class="payment-summary-label">Total Debit</span>
+                                <span class="payment-summary-value">₹45,250.00</span>
+                            </div>
+                            <div class="payment-summary-card">
+                                <span class="payment-summary-label">Total Credit</span>
+                                <span class="payment-summary-value">₹32,800.00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- Footer -->
+        <footer class="text-center py-8 text-gray-500 text-sm">
+            <p>Payment Tab Modern Design System v1.0.0</p>
+            <p class="mt-2">See <code>PAYMENT_TAB_DESIGN_GUIDE.md</code> for complete documentation</p>
+        </footer>
+    </div>
+</body>
+
+</html>
