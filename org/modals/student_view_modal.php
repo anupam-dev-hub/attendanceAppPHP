@@ -45,112 +45,140 @@
                 <div id="viewTabContent">
                     <!-- Overview Tab -->
                     <div class="hidden p-4 rounded-lg bg-gray-50 block" id="overview" role="tabpanel" aria-labelledby="overview-tab">
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <!-- Photo Section -->
-                            <div class="md:col-span-1 flex flex-col items-center">
-                                <div id="viewPhotoContainer" class="mb-4">
-                                    <img id="viewStudentPhoto" src="" alt="Student Photo" class="w-40 h-40 rounded-lg object-cover border-4 border-gray-200 shadow-md">
-                                </div>
-                                <div id="viewNoPhoto" class="hidden w-40 h-40 rounded-lg bg-gray-100 flex items-center justify-center border-4 border-gray-200 mb-4">
-                                    <span class="text-gray-400 text-sm">No Photo</span>
-                                </div>
-                                <div id="viewPhotoActions" class="flex flex-col space-y-2">
-                                    <button onclick="viewFullPhoto()" id="viewPhotoBtn" class="text-sm text-teal-600 hover:text-teal-800 font-medium flex items-center justify-center space-x-1">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                        </svg>
-                                        <span>Preview</span>
-                                    </button>
-                                    <button onclick="downloadPhoto()" id="viewPhotoDownloadBtn" class="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center justify-center space-x-1">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-                                        </svg>
-                                        <span>Download</span>
-                                    </button>
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                            <!-- Photo Card -->
+                            <div class="overview-card">
+                                <div class="flex flex-col items-center">
+                                    <div id="viewPhotoContainer" class="mb-4">
+                                        <img id="viewStudentPhoto" src="" alt="Student Photo" class="w-40 h-40 rounded-lg object-cover border-4 border-teal-200 shadow-md">
+                                    </div>
+                                    <div id="viewNoPhoto" class="hidden w-40 h-40 rounded-lg bg-gray-100 flex items-center justify-center border-4 border-gray-200 mb-4">
+                                        <span class="text-gray-400 text-sm">No Photo</span>
+                                    </div>
+                                    <div id="viewPhotoActions" class="flex gap-2 w-full">
+                                        <button onclick="viewFullPhoto()" id="viewPhotoBtn" class="flex-1 text-xs text-teal-600 hover:text-teal-800 font-medium flex items-center justify-center space-x-1 py-2 px-3 border border-teal-200 rounded-lg hover:bg-teal-50 transition">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                            </svg>
+                                            <span>Preview</span>
+                                        </button>
+                                        <button onclick="downloadPhoto()" id="viewPhotoDownloadBtn" class="flex-1 text-xs text-blue-600 hover:text-blue-800 font-medium flex items-center justify-center space-x-1 py-2 px-3 border border-blue-200 rounded-lg hover:bg-blue-50 transition">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                                            </svg>
+                                            <span>Download</span>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
 
-                            <!-- Details Section -->
-                            <div class="md:col-span-2 space-y-4">
-                                <!-- Personal Information -->
-                                <div>
-                                    <h4 class="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">Personal Information</h4>
-                                    <div class="grid grid-cols-2 gap-3">
-                                        <div>
-                                            <p class="text-xs text-gray-500 uppercase">Name</p>
-                                            <p class="text-sm font-medium text-gray-900" id="viewName">-</p>
-                                        </div>
-                                        <div>
-                                            <p class="text-xs text-gray-500 uppercase">Roll Number</p>
-                                            <p class="text-sm font-medium text-gray-900" id="viewRoll">-</p>
-                                        </div>
-                                        <div>
-                                            <p class="text-xs text-gray-500 uppercase">Phone</p>
-                                            <p class="text-sm font-medium text-gray-900" id="viewPhone">-</p>
-                                        </div>
-                                        <div>
-                                            <p class="text-xs text-gray-500 uppercase">Email</p>
-                                            <p class="text-sm font-medium text-gray-900" id="viewEmail">-</p>
-                                        </div>
-                                        <div class="col-span-2">
-                                            <p class="text-xs text-gray-500 uppercase">Address</p>
-                                            <p class="text-sm font-medium text-gray-900" id="viewAddress">-</p>
-                                        </div>
+                            <!-- Personal Information Card -->
+                            <div class="overview-card lg:col-span-2">
+                                <div class="overview-card-header">
+                                    <svg class="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                    </svg>
+                                    <h4>Personal Information</h4>
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div class="overview-info-item">
+                                        <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Name</p>
+                                        <p class="text-sm font-medium text-gray-900" id="viewName">-</p>
+                                    </div>
+                                    <div class="overview-info-item">
+                                        <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Roll Number</p>
+                                        <p class="text-sm font-medium text-gray-900" id="viewRoll">-</p>
+                                    </div>
+                                    <div class="overview-info-item">
+                                        <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Phone</p>
+                                        <p class="text-sm font-medium text-gray-900" id="viewPhone">-</p>
+                                    </div>
+                                    <div class="overview-info-item">
+                                        <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Email</p>
+                                        <p class="text-sm font-medium text-gray-900" id="viewEmail">-</p>
+                                    </div>
+                                    <div class="overview-info-item sm:col-span-2">
+                                        <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Address</p>
+                                        <p class="text-sm font-medium text-gray-900" id="viewAddress">-</p>
                                     </div>
                                 </div>
+                            </div>
 
-                                <!-- Academic Information -->
-                                <div>
-                                    <h4 class="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">Academic Information</h4>
-                                    <div class="grid grid-cols-2 gap-3">
-                                        <div>
-                                            <p class="text-xs text-gray-500 uppercase">Class</p>
-                                            <p class="text-sm font-medium text-gray-900" id="viewClass">-</p>
-                                        </div>
-                                        <div>
-                                            <p class="text-xs text-gray-500 uppercase">Batch</p>
-                                            <p class="text-sm font-medium text-gray-900" id="viewBatch">-</p>
-                                        </div>
-                                        <div>
-                                            <p class="text-xs text-gray-500 uppercase">Status</p>
-                                            <p class="text-sm font-medium text-gray-900" id="viewStatus">-</p>
-                                        </div>
-                                        <div class="col-span-2">
-                                            <p class="text-xs text-gray-500 uppercase">Remark</p>
-                                            <p class="text-sm font-medium text-gray-900" id="viewRemark">-</p>
-                                        </div>
+                            <!-- Academic Information Card -->
+                            <div class="overview-card">
+                                <div class="overview-card-header">
+                                    <svg class="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                                    </svg>
+                                    <h4>Academic Details</h4>
+                                </div>
+                                <div class="space-y-3">
+                                    <div class="overview-info-item">
+                                        <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Class</p>
+                                        <p class="text-sm font-medium text-gray-900" id="viewClass">-</p>
+                                    </div>
+                                    <div class="overview-info-item">
+                                        <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Batch</p>
+                                        <p class="text-sm font-medium text-gray-900" id="viewBatch">-</p>
+                                    </div>
+                                    <div class="overview-info-item">
+                                        <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Status</p>
+                                        <p class="text-sm font-medium text-gray-900" id="viewStatus">-</p>
+                                    </div>
+                                    <div class="overview-info-item">
+                                        <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Student ID</p>
+                                        <p class="text-sm font-medium text-gray-900" id="viewStudentId">-</p>
                                     </div>
                                 </div>
+                            </div>
 
-                                <!-- Financial Information -->
-                                <div>
-                                    <h4 class="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">Financial Information</h4>
-                                    <div class="grid grid-cols-2 gap-3">
-                                        <div>
-                                            <p class="text-xs text-gray-500 uppercase">Admission Amount</p>
-                                            <p class="text-sm font-medium text-gray-900" id="viewAdmission">-</p>
-                                        </div>
-                                        <div>
-                                            <p class="text-xs text-gray-500 uppercase">Monthly/Course Fee</p>
-                                            <p class="text-sm font-medium text-gray-900" id="viewFee">-</p>
-                                        </div>
-                                        <div>
-                                            <p class="text-xs text-gray-500 uppercase">Student ID</p>
-                                            <p class="text-sm font-medium text-gray-900" id="viewStudentId">-</p>
-                                        </div>
+                            <!-- Financial Information Card -->
+                            <div class="overview-card">
+                                <div class="overview-card-header">
+                                    <svg class="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    <h4>Financial Information</h4>
+                                </div>
+                                <div class="space-y-3">
+                                    <div class="overview-info-item">
+                                        <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Admission Amount</p>
+                                        <p class="text-sm font-medium text-gray-900" id="viewAdmission">-</p>
+                                    </div>
+                                    <div class="overview-info-item">
+                                        <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Monthly/Course Fee</p>
+                                        <p class="text-sm font-medium text-gray-900" id="viewFee">-</p>
                                     </div>
                                 </div>
+                            </div>
 
-                                <!-- Supporting Documents -->
-                                <div>
-                                    <h4 class="text-lg font-semibold text-gray-800 mb-3 border-b pb-2">Supporting Documents</h4>
-                                    <div id="viewDocumentsList" class="space-y-2">
-                                        <!-- Documents will be populated here -->
-                                    </div>
-                                    <div id="viewNoDocuments" class="hidden text-sm text-gray-500 italic">
-                                        No supporting documents available
-                                    </div>
+                            <!-- Remarks Card -->
+                            <div class="overview-card">
+                                <div class="overview-card-header">
+                                    <svg class="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path>
+                                    </svg>
+                                    <h4>Remarks</h4>
+                                </div>
+                                <div class="overview-info-item">
+                                    <p class="text-sm font-medium text-gray-900" id="viewRemark">-</p>
+                                </div>
+                            </div>
+
+                            <!-- Supporting Documents Card -->
+                            <div class="overview-card lg:col-span-3">
+                                <div class="overview-card-header">
+                                    <svg class="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                    <h4>Supporting Documents</h4>
+                                </div>
+                                <div id="viewDocumentsList" class="flex flex-col gap-2">
+                                    <!-- Documents will be populated here -->
+                                </div>
+                                <div id="viewNoDocuments" class="hidden text-sm text-gray-500 italic text-center py-4">
+                                    No supporting documents available
                                 </div>
                             </div>
                         </div>

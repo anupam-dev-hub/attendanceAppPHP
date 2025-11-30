@@ -1,0 +1,332 @@
+/* ========================================
+   MODERN OVERVIEW TAB DESIGN
+   Contemporary, clean, and professional aesthetics
+   ======================================== */
+
+/* 1. COLOR PALETTE */
+:root {
+    --overview-primary: #0d9488;
+    --overview-primary-hover: #0f766e;
+    --overview-accent: #8b5cf6;
+    --overview-bg-gradient: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    --overview-card-bg: #ffffff;
+    --overview-border: #e2e8f0;
+    --overview-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+    --overview-shadow-md: 0 4px 10px rgba(0, 0, 0, 0.08);
+    --overview-shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.12);
+    --overview-text-primary: #0f172a;
+    --overview-text-secondary: #475569;
+    --overview-text-muted: #64748b;
+}
+
+/* 2. TYPOGRAPHY */
+.overview-container {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.overview-section-title {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--overview-text-primary);
+    letter-spacing: -0.02em;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--overview-border);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.overview-section-title::before {
+    content: '';
+    width: 4px;
+    height: 1.5rem;
+    background: linear-gradient(180deg, var(--overview-primary) 0%, var(--overview-accent) 100%);
+    border-radius: 2px;
+}
+
+.overview-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--overview-text-muted);
+    margin-bottom: 0.25rem;
+}
+
+.overview-value {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--overview-text-primary);
+    line-height: 1.5;
+}
+
+/* 3. LAYOUT STRUCTURE */
+.overview-container {
+    background: var(--overview-bg-gradient);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+}
+
+.overview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+
+/* 4. PHOTO SECTION */
+.overview-photo-wrapper {
+    position: relative;
+    padding: 1.5rem;
+    background: var(--overview-card-bg);
+    border: 1px solid var(--overview-border);
+    border-radius: 1rem;
+    box-shadow: var(--overview-shadow-md);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.overview-photo-wrapper::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, var(--overview-primary) 0%, var(--overview-accent) 100%);
+    border-radius: 1rem 1rem 0 0;
+}
+
+.overview-photo-wrapper:hover {
+    box-shadow: var(--overview-shadow-lg);
+    transform: translateY(-4px);
+}
+
+.overview-photo-frame {
+    position: relative;
+    width: 10rem;
+    height: 10rem;
+    margin-bottom: 1rem;
+}
+
+.overview-photo-frame img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 1rem;
+    border: 3px solid var(--overview-border);
+    transition: all 0.3s ease;
+}
+
+.overview-photo-frame:hover img {
+    border-color: var(--overview-primary);
+    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.2);
+}
+
+.overview-photo-actions {
+    display: flex;
+    gap: 0.75rem;
+    width: 100%;
+}
+
+.overview-photo-btn {
+    flex: 1;
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border-radius: 0.5rem;
+    border: 1.5px solid var(--overview-border);
+    background: var(--overview-card-bg);
+    color: var(--overview-text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.overview-photo-btn:hover {
+    border-color: var(--overview-primary);
+    color: var(--overview-primary);
+    background: rgba(13, 148, 136, 0.05);
+}
+
+.overview-photo-btn svg {
+    width: 1rem;
+    height: 1rem;
+}
+
+/* 5. INFO CARDS */
+.overview-info-card {
+    position: relative;
+    padding: 1.5rem;
+    background: var(--overview-card-bg);
+    border: 1px solid var(--overview-border);
+    border-radius: 1rem;
+    box-shadow: var(--overview-shadow-sm);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+}
+
+.overview-info-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(180deg, var(--overview-primary) 0%, var(--overview-accent) 100%);
+    transform: scaleY(0);
+    transition: transform 0.3s ease;
+}
+
+.overview-info-card:hover {
+    box-shadow: var(--overview-shadow-lg);
+    transform: translateY(-4px);
+    border-color: var(--overview-primary);
+}
+
+.overview-info-card:hover::before {
+    transform: scaleY(1);
+}
+
+.overview-info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+.overview-info-item {
+    padding: 0.75rem;
+    background: rgba(13, 148, 136, 0.03);
+    border-radius: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.overview-info-item:hover {
+    background: rgba(13, 148, 136, 0.08);
+}
+
+/* 6. BADGES */
+.overview-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 9999px;
+    transition: all 0.3s ease;
+}
+
+.overview-badge-active {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.overview-badge-inactive {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+
+.overview-badge:hover {
+    transform: scale(1.05);
+}
+
+/* 7. DOCUMENT LIST */
+.overview-doc-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.overview-doc-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: var(--overview-card-bg);
+    border: 1px solid var(--overview-border);
+    border-radius: 0.625rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.overview-doc-item:hover {
+    border-color: var(--overview-primary);
+    background: rgba(13, 148, 136, 0.03);
+    transform: translateX(4px);
+}
+
+.overview-doc-icon {
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(13, 148, 136, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+    border-radius: 0.5rem;
+}
+
+.overview-doc-icon svg {
+    width: 1.25rem;
+    height: 1.25rem;
+    color: var(--overview-primary);
+}
+
+/* 8. ANIMATIONS */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.overview-animate {
+    animation: fadeInUp 0.5s ease-out;
+}
+
+.overview-animate:nth-child(1) { animation-delay: 0.1s; }
+.overview-animate:nth-child(2) { animation-delay: 0.2s; }
+.overview-animate:nth-child(3) { animation-delay: 0.3s; }
+
+/* 9. RESPONSIVE DESIGN */
+@media (max-width: 768px) {
+    .overview-container {
+        padding: 1rem;
+    }
+    
+    .overview-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .overview-info-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .overview-photo-frame {
+        width: 8rem;
+        height: 8rem;
+    }
+    
+    .overview-section-title {
+        font-size: 1rem;
+    }
+}
+
+/* 10. ACCESSIBILITY */
+.overview-photo-btn:focus,
+.overview-doc-item:focus {
+    outline: 2px solid var(--overview-primary);
+    outline-offset: 2px;
+}

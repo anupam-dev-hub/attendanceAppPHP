@@ -254,6 +254,59 @@
     transform: scaleY(1);
 }
 
+/* Overview Tab Card Styles */
+.overview-card {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.overview-card:hover {
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
+    border-color: #0d9488;
+}
+
+.overview-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid #f1f5f9;
+}
+
+.overview-card-header h4 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: -0.01em;
+}
+
+.overview-info-item {
+    padding: 0.75rem;
+    background: rgba(13, 148, 136, 0.03);
+    border-radius: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.overview-info-item:hover {
+    background: rgba(13, 148, 136, 0.08);
+}
+
+@media (max-width: 1024px) {
+    .overview-card {
+        padding: 1rem;
+    }
+    
+    .overview-card-header h4 {
+        font-size: 0.9rem;
+    }
+}
+
 /* 8. TABLE STYLING - Clean and organized */
 .payments-table {
     width: 100%;
@@ -387,6 +440,228 @@
     }
 }
 
+/* --- Student Form Modern Styles --- */
+.student-form-wrapper {
+    background: linear-gradient(135deg,#f8fafc 0%,#f1f5f9 40%,#eef2f7 100%);
+    border-radius: 1rem;
+}
+
+.student-form-card {
+    background: var(--payment-card-bg);
+    border: 1px solid var(--payment-border);
+    border-radius: 0.875rem;
+    padding: 1.25rem 1.25rem 1.1rem;
+    box-shadow: var(--payment-shadow-sm);
+    position: relative;
+    transition: all .3s ease;
+}
+
+.student-form-card:hover {
+    box-shadow: var(--payment-shadow-lg);
+    border-color: var(--payment-primary);
+    transform: translateY(-3px);
+}
+
+.student-form-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 0.875rem;
+    pointer-events: none;
+    background: radial-gradient(circle at top left, rgba(13,148,136,0.08), transparent 70%);
+    opacity: 0;
+    transition: opacity .3s ease;
+}
+
+.student-form-card:hover::before {
+    opacity: 1;
+}
+
+.student-form-section-title {
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    font-size: .75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--payment-text-secondary);
+    margin-bottom: .9rem;
+}
+
+.student-form-section-title svg {
+    color: var(--payment-primary);
+    flex-shrink: 0;
+}
+
+.form-field-group {
+    display: flex;
+    flex-direction: column;
+    gap: .45rem;
+}
+
+.form-field-group label {
+    font-size: .65rem;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--payment-text-muted);
+}
+
+.form-field-group input,
+.form-field-group select,
+.form-field-group textarea {
+    background: #ffffff;
+    border: 1.5px solid var(--payment-border);
+    border-radius: .625rem;
+    padding: .65rem .85rem;
+    font-size: .8rem;
+    color: var(--payment-text-primary);
+    transition: all .25s ease;
+    font-weight: 500;
+}
+
+.form-field-group textarea {
+    resize: vertical;
+    min-height: 110px;
+}
+
+.form-field-group input:focus,
+.form-field-group select:focus,
+.form-field-group textarea:focus {
+    outline: none;
+    border-color: var(--payment-primary);
+    box-shadow: 0 0 0 3px rgba(13,148,136,.18);
+}
+
+.form-field-group input:hover,
+.form-field-group select:hover,
+.form-field-group textarea:hover {
+    border-color: var(--payment-primary-hover);
+}
+
+.form-hint {
+    font-size: .6rem;
+    letter-spacing: .05em;
+    color: var(--payment-text-muted);
+    margin-top: .25rem;
+}
+
+.form-subtitle {
+    font-size: .6rem;
+    font-weight: 700;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--payment-text-secondary);
+    margin-bottom: .4rem;
+}
+
+.document-list {
+    display: flex;
+    flex-direction: column;
+    gap: .4rem;
+}
+
+.document-list li {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    background: #f8fafc;
+    border: 1px solid var(--payment-border);
+    border-radius: .5rem;
+    padding: .45rem .6rem;
+    font-size: .65rem;
+    color: var(--payment-text-primary);
+    transition: all .2s ease;
+}
+
+.document-list li:hover {
+    background: #eef7f6;
+    border-color: var(--payment-primary);
+}
+
+.form-checkbox-modern {
+    width: 1rem;
+    height: 1rem;
+    border: 1.5px solid var(--payment-border);
+    border-radius: .35rem;
+    cursor: pointer;
+    transition: all .25s ease;
+}
+
+.form-checkbox-modern:checked {
+    background: var(--payment-primary);
+    border-color: var(--payment-primary);
+    box-shadow: 0 0 0 3px rgba(13,148,136,.25);
+}
+
+.photo-preview-frame {
+    width: 5.5rem;
+    height: 5.5rem;
+    object-fit: cover;
+    border: 3px solid var(--payment-border);
+    border-radius: .75rem;
+    box-shadow: var(--payment-shadow-sm);
+    transition: all .3s ease;
+}
+
+.photo-preview-frame:hover {
+    border-color: var(--payment-primary);
+    box-shadow: 0 0 0 3px rgba(13,148,136,.2);
+    transform: scale(1.03);
+}
+
+.form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .75rem;
+    justify-content: flex-end;
+    padding-top: .5rem;
+}
+
+.primary-action-btn,
+.secondary-action-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    font-size: .75rem;
+    font-weight: 600;
+    letter-spacing: .05em;
+    padding: .7rem 1.2rem;
+    border-radius: .7rem;
+    transition: all .3s ease;
+    cursor: pointer;
+    border: none;
+}
+
+.primary-action-btn {
+    background: linear-gradient(135deg,var(--payment-primary) 0%,var(--payment-primary-hover) 100%);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(13,148,136,.35);
+}
+
+.primary-action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(13,148,136,.45);
+}
+
+.primary-action-btn:active {
+    transform: translateY(0);
+}
+
+.secondary-action-btn {
+    background: #ffffff;
+    color: var(--payment-text-secondary);
+    border: 1.5px solid var(--payment-border);
+}
+
+.secondary-action-btn:hover {
+    border-color: var(--payment-primary);
+    color: var(--payment-primary);
+    background: #f0fdfa;
+}
+
 /* 13. ANIMATIONS - Subtle and engaging */
 @keyframes slideIn {
     from {
@@ -498,4 +773,55 @@
 .dataTables_info {
     font-size: 0.75rem;
     color: var(--payment-text-secondary);
+}
+
+/* Responsive Student Form Grid */
+.student-form-grid {
+    display: grid;
+    gap: 1.25rem;
+}
+
+.form-span-2 {
+    grid-column: span 1;
+}
+
+@media (min-width: 1024px) {
+    .student-form-grid {
+        grid-template-columns: repeat(2, 1fr);
+        align-items: start;
+    }
+    .form-span-2 {
+        grid-column: span 2;
+    }
+    .student-form-card {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+    .student-form-card .form-field-group:last-child {
+        margin-bottom: 0;
+    }
+}
+
+/* Small screen fine-tune */
+@media (max-width: 640px) {
+    .student-form-grid {
+        gap: 1rem;
+    }
+    .student-form-card {
+        padding: 1rem 1rem .85rem;
+    }
+}
+
+/* Improve modal width handling */
+@media (max-width: 480px) {
+    #studentModal .inline-block {
+        max-width: 100% !important;
+        margin: 0;
+        border-radius: 0;
+    }
+    .student-form-wrapper {
+        padding: 1.25rem 1rem 2rem;
+        border-radius: 0;
+    }
 }

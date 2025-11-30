@@ -14,7 +14,7 @@
                     <p class="mt-4 text-gray-700 font-medium">Loading student data...</p>
                 </div>
             </div>
-            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 md:p-8 lg:p-10">
+            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 md:p-8 lg:p-10 student-form-wrapper">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-lg leading-6 font-medium text-gray-900" id="modalTitle">Add New Student</h3>
                     <button onclick="closeModal()" class="text-gray-400 hover:text-gray-500">
@@ -24,100 +24,161 @@
                         </svg>
                     </button>
                 </div>
-                <form method="POST" id="studentForm" class="space-y-4" enctype="multipart/form-data">
+                <form method="POST" id="studentForm" class="space-y-6 student-form-grid" enctype="multipart/form-data">
                     <input type="hidden" name="student_id" id="studentId">
 
-                    <div>
-                        <label class="block text-gray-700 text-sm font-bold mb-1">Name</label>
-                        <input type="text" name="name" id="studentName" required class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-teal-500">
-                    </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-gray-700 text-sm font-bold mb-1">Class</label>
-                            <input type="text" name="class" id="studentClass" required class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-teal-500">
+                    <!-- Personal Info Card -->
+                    <div class="student-form-card form-span-2">
+                        <div class="student-form-section-title">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                            <span>Personal Information</span>
                         </div>
-                        <div>
-                            <label class="block text-gray-700 text-sm font-bold mb-1">Batch</label>
-                            <select name="batch" id="studentBatch" required class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-teal-500">
-                                <?php
-                                $startYear = 2025;
-                                for ($i = 0; $i <= 5; $i++) {
-                                    $y1 = $startYear + $i;
-                                    $y2 = $y1 + 1;
-                                    $batchOption = "$y1-$y2";
-                                    echo "<option value='$batchOption'>$batchOption</option>";
-                                }
-                                ?>
-                            </select>
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-gray-700 text-sm font-bold mb-1">Roll Number</label>
-                        <input type="text" name="roll_number" id="studentRoll" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-teal-500">
-                    </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-gray-700 text-sm font-bold mb-1">Phone</label>
-                            <input type="text" name="phone" id="studentPhone" required class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-teal-500">
-                        </div>
-                        <div>
-                            <label class="block text-gray-700 text-sm font-bold mb-1">Email</label>
-                            <input type="email" name="email" id="studentEmail" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-teal-500">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-gray-700 text-sm font-bold mb-1">Address</label>
-                        <input type="text" name="address" id="studentAddress" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-teal-500">
-                    </div>
-                    <div>
-                        <label class="block text-gray-700 text-sm font-bold mb-1">Admission Amount</label>
-                        <input type="number" step="0.01" name="admission_amount" id="studentAdmission" placeholder="0.00" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-teal-500">
-                    </div>
-                    <div>
-                        <label class="block text-gray-700 text-sm font-bold mb-1">Monthly/Course Fee</label>
-                        <input type="number" step="0.01" name="fee" id="studentFee" placeholder="0.00" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-teal-500">
-                    </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div class="flex items-center">
-                            <input type="checkbox" name="is_active" id="studentIsActive" checked class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded">
-                            <label for="studentIsActive" class="ml-2 block text-sm text-gray-700 font-bold">Active Student</label>
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-gray-700 text-sm font-bold mb-1">Remark</label>
-                        <textarea name="remark" id="studentRemark" rows="3" placeholder="Any additional notes or remarks..." class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-teal-500"></textarea>
-                    </div>
-                    <div>
-                        <label class="block text-gray-700 text-sm font-bold mb-1">Photo</label>
-                        <input type="file" name="photo" id="studentPhoto" accept="image/*" class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none p-2" onchange="previewPhoto(event)">
-                        <p class="text-xs text-gray-500 mt-1">Accepted formats: JPG, PNG, GIF</p>
-                        <div id="photoPreview" class="mt-2 hidden">
-                            <img id="photoPreviewImg" src="" alt="Photo Preview" class="w-32 h-32 object-cover rounded border-2 border-gray-300">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-gray-700 text-sm font-bold mb-1">Supporting Documents (Multiple)</label>
-                        <input type="file" name="documents[]" id="studentDocuments" multiple class="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none p-2" onchange="previewDocuments(event)">
-                        <p class="text-xs text-gray-500 mt-1">You can upload multiple documents</p>
-                        <div id="existingDocumentsPreview" class="mt-2 hidden">
-                            <p class="text-xs font-semibold text-gray-700 mb-1">Existing Documents:</p>
-                            <ul id="existingDocumentsList" class="text-xs text-gray-600 list-disc list-inside"></ul>
-                        </div>
-                        <div id="newDocumentsPreview" class="mt-2 hidden">
-                            <p class="text-xs font-semibold text-gray-700 mb-1">New Selected Files:</p>
-                            <ul id="newDocumentsList" class="text-xs text-gray-600 list-disc list-inside"></ul>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            <div class="form-field-group">
+                                <label>Name</label>
+                                <input type="text" name="name" id="studentName" required>
+                            </div>
+                            <div class="form-field-group">
+                                <label>Roll Number</label>
+                                <input type="text" name="roll_number" id="studentRoll">
+                            </div>
+                            <div class="form-field-group">
+                                <label>Phone</label>
+                                <input type="text" name="phone" id="studentPhone" required>
+                            </div>
+                            <div class="form-field-group">
+                                <label>Email</label>
+                                <input type="email" name="email" id="studentEmail">
+                            </div>
+                            <div class="form-field-group sm:col-span-2">
+                                <label>Address</label>
+                                <input type="text" name="address" id="studentAddress">
+                            </div>
                         </div>
                     </div>
 
-                    <div class="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
-                        <button type="submit" id="submitBtn" class="w-full inline-flex justify-center items-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-teal-600 text-base font-medium text-white hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 sm:col-start-2 sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                    <!-- Academic Card -->
+                    <div class="student-form-card">
+                        <div class="student-form-section-title">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                            </svg>
+                            <span>Academic Details</span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            <div class="form-field-group">
+                                <label>Class</label>
+                                <input type="text" name="class" id="studentClass" required>
+                            </div>
+                            <div class="form-field-group">
+                                <label>Batch</label>
+                                <select name="batch" id="studentBatch" required>
+                                    <?php
+                                    $startYear = 2025;
+                                    for ($i = 0; $i <= 5; $i++) {
+                                        $y1 = $startYear + $i;
+                                        $y2 = $y1 + 1;
+                                        $batchOption = "$y1-$y2";
+                                        echo "<option value='$batchOption'>$batchOption</option>";
+                                    }
+                                    ?>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Financial Card -->
+                    <div class="student-form-card">
+                        <div class="student-form-section-title">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span>Financial</span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            <div class="form-field-group">
+                                <label>Admission Amount</label>
+                                <input type="number" step="0.01" name="admission_amount" id="studentAdmission" placeholder="0.00">
+                            </div>
+                            <div class="form-field-group">
+                                <label>Monthly/Course Fee</label>
+                                <input type="number" step="0.01" name="fee" id="studentFee" placeholder="0.00">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Status / Remarks Card -->
+                    <div class="student-form-card">
+                        <div class="student-form-section-title">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                            </svg>
+                            <span>Status & Remarks</span>
+                        </div>
+                        <div class="flex items-center mb-4">
+                            <input type="checkbox" name="is_active" id="studentIsActive" checked class="form-checkbox-modern">
+                            <label for="studentIsActive" class="ml-2 text-xs font-semibold text-gray-700 tracking-wide">Active Student</label>
+                        </div>
+                        <div class="form-field-group">
+                            <label>Remark</label>
+                            <textarea name="remark" id="studentRemark" rows="3" placeholder="Any additional notes..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Photo Card -->
+                    <div class="student-form-card">
+                        <div class="student-form-section-title">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                            <span>Photo</span>
+                        </div>
+                        <div class="form-field-group">
+                            <label>Upload Photo</label>
+                            <input type="file" name="photo" id="studentPhoto" accept="image/*" onchange="previewPhoto(event)">
+                            <p class="form-hint">Accepted: JPG, PNG, GIF</p>
+                            <div id="photoPreview" class="mt-3 hidden">
+                                <img id="photoPreviewImg" src="" alt="Photo Preview" class="photo-preview-frame">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Documents Card -->
+                    <div class="student-form-card form-span-2">
+                        <div class="student-form-section-title">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <span>Supporting Documents</span>
+                        </div>
+                        <div class="form-field-group">
+                            <label>Upload Documents</label>
+                            <input type="file" name="documents[]" id="studentDocuments" multiple onchange="previewDocuments(event)">
+                            <p class="form-hint">Multiple files allowed</p>
+                            <div id="existingDocumentsPreview" class="mt-3 hidden">
+                                <p class="form-subtitle">Existing:</p>
+                                <ul id="existingDocumentsList" class="document-list"></ul>
+                            </div>
+                            <div id="newDocumentsPreview" class="mt-3 hidden">
+                                <p class="form-subtitle">New Selected:</p>
+                                <ul id="newDocumentsList" class="document-list"></ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="form-actions form-span-2">
+                        <button type="submit" id="submitBtn" class="primary-action-btn">
                             <span id="submitBtnText">Save Student</span>
-                            <svg id="submitBtnSpinner" class="hidden animate-spin -mr-1 ml-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            <svg id="submitBtnSpinner" class="hidden animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                             </svg>
                         </button>
-                        <button type="button" onclick="closeModal()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:col-start-1 sm:text-sm">
+                        <button type="button" onclick="closeModal()" class="secondary-action-btn">
                             Cancel
                         </button>
                     </div>

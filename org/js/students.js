@@ -318,15 +318,23 @@ function previewDocuments(event) {
     const files = event.target.files;
     const list = document.getElementById('newDocumentsList');
     const preview = document.getElementById('newDocumentsPreview');
+    const fileInput = document.getElementById('studentDocuments');
 
     list.innerHTML = '';
 
     if (files && files.length > 0) {
         preview.classList.remove('hidden');
-        for (let i = 0; i < files.length; i++) {
-            const file = files[i];
+        
+        // Convert FileList to Array to allow manipulation
+        const filesArray = Array.from(files);
+        
+        filesArray.forEach((file, index) => {
             const li = document.createElement('li');
-            li.className = 'flex items-center space-x-3 py-2 border-b border-gray-200 last:border-b-0';
+            li.className = 'flex items-center justify-between py-2 border-b border-gray-200 last:border-b-0';
+            li.dataset.fileIndex = index;
+
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'flex items-center space-x-3 flex-1';
 
             // Check if file is an image
             if (file.type.startsWith('image/')) {
@@ -342,8 +350,8 @@ function previewDocuments(event) {
                     textSpan.className = 'text-gray-700 text-sm truncate flex-1';
                     textSpan.textContent = file.name;
 
-                    li.appendChild(img);
-                    li.appendChild(textSpan);
+                    contentDiv.appendChild(img);
+                    contentDiv.appendChild(textSpan);
                 };
                 reader.readAsDataURL(file);
             } else if (file.type === 'application/pdf') {
@@ -352,7 +360,6 @@ function previewDocuments(event) {
                 reader.onload = function (e) {
                     const loadingTask = pdfjsLib.getDocument({ data: e.target.result });
                     loadingTask.promise.then(function (pdf) {
-                        // Get first page
                         pdf.getPage(1).then(function (page) {
                             const scale = 0.5;
                             const viewport = page.getViewport({ scale: scale });
@@ -373,26 +380,47 @@ function previewDocuments(event) {
                                 textSpan.className = 'text-gray-700 text-sm truncate flex-1';
                                 textSpan.textContent = file.name;
 
-                                li.appendChild(canvas);
-                                li.appendChild(textSpan);
+                                contentDiv.appendChild(canvas);
+                                contentDiv.appendChild(textSpan);
                             });
                         });
                     }).catch(function (error) {
                         console.error('Error loading PDF:', error);
-                        // Fallback to icon if PDF loading fails
                         const icon = '<svg class="w-8 h-8 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>';
-                        li.innerHTML = `${icon}<span class="text-gray-700 text-sm truncate flex-1">${file.name}</span>`;
+                        contentDiv.innerHTML = `${icon}<span class="text-gray-700 text-sm truncate flex-1">${file.name}</span>`;
                     });
                 };
                 reader.readAsArrayBuffer(file);
             } else {
                 // Show icon for other file types
                 const icon = '<svg class="w-8 h-8 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>';
-                li.innerHTML = `${icon}<span class="text-gray-700 text-sm truncate flex-1">${file.name}</span>`;
+                contentDiv.innerHTML = `${icon}<span class="text-gray-700 text-sm truncate flex-1">${file.name}</span>`;
             }
 
+            li.appendChild(contentDiv);
+
+            // Add remove button
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.className = 'ml-2 text-red-600 hover:text-red-800 transition';
+            removeBtn.title = 'Remove document';
+            removeBtn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>';
+            removeBtn.onclick = function() {
+                // Remove this file from the array
+                filesArray.splice(index, 1);
+                
+                // Create new FileList from remaining files
+                const dt = new DataTransfer();
+                filesArray.forEach(f => dt.items.add(f));
+                fileInput.files = dt.files;
+                
+                // Re-render the preview
+                previewDocuments({ target: fileInput });
+            };
+            li.appendChild(removeBtn);
+
             list.appendChild(li);
-        }
+        });
     } else {
         preview.classList.add('hidden');
     }
@@ -444,30 +472,98 @@ function deleteDocument(documentId, studentId, event) {
                             confirmButtonColor: '#0d9488',
                             confirmButtonText: 'OK'
                         }).then(() => {
-                            // Refresh the document list AFTER user clicks OK
+                            // Refresh the document list with correct element ID
                             fetch('get_student_documents.php?student_id=' + studentId)
                                 .then(response => response.json())
                                 .then(data => {
+                                    const documentsList = document.getElementById('existingDocumentsList');
+                                    const documentsPreview = document.getElementById('existingDocumentsPreview');
+                                    
+                                    documentsList.innerHTML = '';
+                                    
                                     if (data.success && data.documents && data.documents.length > 0) {
-                                        const documentsList = document.getElementById('documentsList');
-                                        documentsList.innerHTML = '';
                                         data.documents.forEach(doc => {
                                             const li = document.createElement('li');
-                                            li.className = 'flex items-center justify-between py-1';
-                                            li.innerHTML = `
-                                            <a href="${doc.file_path}" target="_blank" class="text-blue-600 hover:underline flex-1">${doc.file_name}</a>
-                                            <button type="button" onclick="deleteDocument(${doc.id}, ${studentId}, event)" class="ml-2 text-red-600 hover:text-red-800 transition" title="Delete document">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                                </svg>
-                                            </button>
-                                        `;
+                                            li.className = 'flex items-center justify-between py-2 border-b border-gray-200 last:border-b-0';
+
+                                            // Create container for thumbnail and name
+                                            const docInfo = document.createElement('div');
+                                            docInfo.className = 'flex items-center space-x-3 flex-1';
+
+                                            // Check file type and create appropriate preview
+                                            const fileExt = doc.file_name.split('.').pop().toLowerCase();
+                                            if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExt)) {
+                                                // Image thumbnail
+                                                const img = document.createElement('img');
+                                                img.src = doc.file_path;
+                                                img.className = 'w-16 h-16 object-cover rounded border border-gray-300';
+                                                img.alt = doc.file_name;
+                                                docInfo.appendChild(img);
+                                            } else if (fileExt === 'pdf') {
+                                                // PDF thumbnail - load and render first page
+                                                const canvas = document.createElement('canvas');
+                                                canvas.className = 'w-16 h-16 object-cover rounded border border-gray-300';
+                                                docInfo.appendChild(canvas);
+
+                                                // Load PDF and render first page
+                                                fetch(doc.file_path)
+                                                    .then(response => response.arrayBuffer())
+                                                    .then(data => {
+                                                        const loadingTask = pdfjsLib.getDocument({ data: data });
+                                                        loadingTask.promise.then(function (pdf) {
+                                                            pdf.getPage(1).then(function (page) {
+                                                                const scale = 0.5;
+                                                                const viewport = page.getViewport({ scale: scale });
+                                                                const context = canvas.getContext('2d');
+                                                                canvas.height = viewport.height;
+                                                                canvas.width = viewport.width;
+                                                                page.render({ canvasContext: context, viewport: viewport });
+                                                            });
+                                                        });
+                                                    })
+                                                    .catch(error => {
+                                                        console.error('Error loading PDF:', error);
+                                                        // Fallback to icon
+                                                        canvas.remove();
+                                                        const icon = document.createElement('div');
+                                                        icon.innerHTML = '<svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>';
+                                                        docInfo.insertBefore(icon, docInfo.firstChild);
+                                                    });
+                                            } else {
+                                                // Generic file icon
+                                                const icon = document.createElement('div');
+                                                icon.innerHTML = '<svg class="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>';
+                                                docInfo.appendChild(icon);
+                                            }
+
+                                            // Add filename link
+                                            const link = document.createElement('a');
+                                            link.href = doc.file_path;
+                                            link.target = '_blank';
+                                            link.className = 'text-blue-600 hover:underline text-sm truncate flex-1';
+                                            link.textContent = doc.file_name;
+                                            docInfo.appendChild(link);
+
+                                            li.appendChild(docInfo);
+
+                                            // Add delete button
+                                            const deleteBtn = document.createElement('button');
+                                            deleteBtn.type = 'button';
+                                            deleteBtn.className = 'ml-2 text-red-600 hover:text-red-800 transition';
+                                            deleteBtn.title = 'Delete document';
+                                            deleteBtn.onclick = function (e) { deleteDocument(doc.id, studentId, e); };
+                                            deleteBtn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>';
+                                            li.appendChild(deleteBtn);
+
                                             documentsList.appendChild(li);
                                         });
-                                        document.getElementById('documentsPreview').classList.remove('hidden');
+                                        documentsPreview.classList.remove('hidden');
                                     } else {
-                                        document.getElementById('documentsPreview').classList.add('hidden');
+                                        documentsPreview.classList.add('hidden');
                                     }
+                                })
+                                .catch(error => {
+                                    console.error('Error refreshing documents:', error);
                                 });
                         });
                     } else {
@@ -501,13 +597,41 @@ function formatFileSize(bytes) {
 
 // Photo View Functions
 function viewPhoto(photoPath, studentName) {
-    document.getElementById('photoViewImg').src = photoPath;
-    document.getElementById('photoStudentName').innerText = studentName;
-    document.getElementById('photoModal').classList.remove('hidden');
+    // Use the document modal for photos too
+    const modal = document.getElementById('documentModal');
+    const content = document.getElementById('documentPreviewContent');
+    const title = document.getElementById('documentModalTitle');
+    const downloadLink = document.getElementById('documentDownloadLink');
+
+    title.innerText = `${studentName} - Photo`;
+    
+    // Set up download link
+    downloadLink.href = photoPath;
+    const fileName = photoPath.split('/').pop() || `${studentName.replace(/\s+/g, '_')}_photo.jpg`;
+    downloadLink.download = fileName;
+    
+    // Add onclick handler
+    downloadLink.onclick = function(e) {
+        e.preventDefault();
+        downloadDocument(photoPath, fileName);
+    };
+
+    content.innerHTML = '';
+
+    // Display photo
+    const img = document.createElement('img');
+    img.src = photoPath;
+    img.alt = studentName;
+    img.className = 'w-full h-auto max-h-[70vh] object-contain rounded-lg mx-auto';
+    content.appendChild(img);
+
+    modal.classList.remove('hidden');
 }
 
 function closePhotoModal() {
-    document.getElementById('photoModal').classList.add('hidden');
+    // This function now closes the document modal
+    document.getElementById('documentModal').classList.add('hidden');
+    document.getElementById('documentPreviewContent').innerHTML = '';
 }
 
 // Student Info View Modal Functions
@@ -612,12 +736,12 @@ function viewStudent(student) {
                                 </svg>
                                 <span>Preview</span>
                             </button>
-                            <a href="${doc.file_path}" target="_blank" class="ml-2 text-teal-600 hover:text-teal-800 text-sm font-medium flex items-center space-x-1">
+                            <button onclick="downloadDocument('${filePath}', '${fileName}')" class="ml-2 text-teal-600 hover:text-teal-800 text-sm font-medium flex items-center space-x-1">
                                 <span>Download</span>
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
                                 </svg>
-                            </a>
+                            </button>
                         </div>
                     `;
                     documentsList.appendChild(docItem);
@@ -839,18 +963,41 @@ function closeViewModal() {
 }
 
 function viewPhoto(photoPath, studentName) {
-    document.getElementById('fullSizePhoto').src = photoPath;
-    document.getElementById('photoModalTitle').innerText = studentName;
-    const downloadLink = document.getElementById('photoDownloadLink');
+    // Use the document modal for photos too
+    const modal = document.getElementById('documentModal');
+    const content = document.getElementById('documentPreviewContent');
+    const title = document.getElementById('documentModalTitle');
+    const downloadLink = document.getElementById('documentDownloadLink');
+
+    title.innerText = `${studentName} - Photo`;
+    
+    // Set up download link
     downloadLink.href = photoPath;
-    // Extract filename from path or use student name
     const fileName = photoPath.split('/').pop() || `${studentName.replace(/\s+/g, '_')}_photo.jpg`;
     downloadLink.download = fileName;
-    document.getElementById('photoModal').classList.remove('hidden');
+    
+    // Add onclick handler
+    downloadLink.onclick = function(e) {
+        e.preventDefault();
+        downloadDocument(photoPath, fileName);
+    };
+
+    content.innerHTML = '';
+
+    // Display photo
+    const img = document.createElement('img');
+    img.src = photoPath;
+    img.alt = studentName;
+    img.className = 'w-full h-auto max-h-[70vh] object-contain rounded-lg mx-auto';
+    content.appendChild(img);
+
+    modal.classList.remove('hidden');
 }
 
 function closePhotoModal() {
-    document.getElementById('photoModal').classList.add('hidden');
+    // This function now closes the document modal
+    document.getElementById('documentModal').classList.add('hidden');
+    document.getElementById('documentPreviewContent').innerHTML = '';
 }
 
 // Document Preview Functions
@@ -861,7 +1008,16 @@ function previewDocument(filePath, fileName) {
     const downloadLink = document.getElementById('documentDownloadLink');
 
     title.innerText = fileName;
+    
+    // Set up download link with download attribute
     downloadLink.href = filePath;
+    downloadLink.download = fileName;
+    
+    // Also add onclick handler as backup
+    downloadLink.onclick = function(e) {
+        e.preventDefault();
+        downloadDocument(filePath, fileName);
+    };
 
     // Get file extension
     const fileExt = fileName.split('.').pop().toLowerCase();
@@ -994,14 +1150,37 @@ function downloadPhoto() {
     }
 }
 
-function editFromView() {
-    closeViewModal();
-    if (currentViewStudent) {
-        openEditModal(currentViewStudent);
-    }
+// Alternative download function with fetch and better error handling
+function downloadDocument(filePath, fileName) {
+    console.log('Downloading:', filePath, fileName);
+    
+    fetch(filePath)
+        .then(response => {
+            console.log('Fetch response:', response.status);
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.blob();
+        })
+        .then(blob => {
+            console.log('Blob received:', blob.size, 'bytes');
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+            console.log('Download triggered successfully');
+        })
+        .catch(error => {
+            console.error('Download failed:', error);
+            // Fallback: open in new tab
+            alert('Direct download failed. Opening file in new tab...');
+            window.open(filePath, '_blank');
+        });
 }
-
-
 
 // Toggle Student Status Function
 function toggleStudentStatus(studentId, currentStatus, buttonElement) {
