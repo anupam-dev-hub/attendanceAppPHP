@@ -14,8 +14,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $address = $_POST['address'];
     $phone = $_POST['phone'];
     $email = $_POST['email'];
+    
+    // New personal fields
+    $sex = isset($_POST['sex']) && trim($_POST['sex']) !== '' ? trim($_POST['sex']) : null;
+    $sex_other = isset($_POST['sex_other']) && trim($_POST['sex_other']) !== '' ? trim($_POST['sex_other']) : null;
+    $date_of_birth = isset($_POST['date_of_birth']) && trim($_POST['date_of_birth']) !== '' ? trim($_POST['date_of_birth']) : null;
+    $place_of_birth = isset($_POST['place_of_birth']) && trim($_POST['place_of_birth']) !== '' ? trim($_POST['place_of_birth']) : null;
+    $nationality = isset($_POST['nationality']) && trim($_POST['nationality']) !== '' ? trim($_POST['nationality']) : 'Indian';
+    $mother_tongue = isset($_POST['mother_tongue']) && trim($_POST['mother_tongue']) !== '' ? trim($_POST['mother_tongue']) : null;
+    $religion = isset($_POST['religion']) && trim($_POST['religion']) !== '' ? trim($_POST['religion']) : null;
+    $religion_other = isset($_POST['religion_other']) && trim($_POST['religion_other']) !== '' ? trim($_POST['religion_other']) : null;
+    $community = isset($_POST['community']) && trim($_POST['community']) !== '' ? trim($_POST['community']) : null;
+    $community_other = isset($_POST['community_other']) && trim($_POST['community_other']) !== '' ? trim($_POST['community_other']) : null;
+    $native_district = isset($_POST['native_district']) && trim($_POST['native_district']) !== '' ? trim($_POST['native_district']) : null;
+    $pin_code = isset($_POST['pin_code']) && trim($_POST['pin_code']) !== '' ? trim($_POST['pin_code']) : null;
+    
+    // Parent/Guardian fields
+    $parent_guardian_name = isset($_POST['parent_guardian_name']) && trim($_POST['parent_guardian_name']) !== '' ? trim($_POST['parent_guardian_name']) : null;
+    $parent_contact = isset($_POST['parent_contact']) && trim($_POST['parent_contact']) !== '' ? trim($_POST['parent_contact']) : null;
+    
+    // Examination fields
+    $exam_name = isset($_POST['exam_name']) && trim($_POST['exam_name']) !== '' ? trim($_POST['exam_name']) : null;
+    $exam_total_marks = isset($_POST['exam_total_marks']) && $_POST['exam_total_marks'] !== '' ? intval($_POST['exam_total_marks']) : null;
+    $exam_marks_obtained = isset($_POST['exam_marks_obtained']) && $_POST['exam_marks_obtained'] !== '' ? floatval($_POST['exam_marks_obtained']) : null;
+    $exam_percentage = isset($_POST['exam_percentage']) && $_POST['exam_percentage'] !== '' ? floatval($_POST['exam_percentage']) : null;
+    $exam_grade = isset($_POST['exam_grade']) && trim($_POST['exam_grade']) !== '' ? trim($_POST['exam_grade']) : null;
+    
+    // Handle fees - collect from form and store as JSON
+    $fees_json = null;
+    $fee_inputs = isset($_POST['fee_inputs']) ? $_POST['fee_inputs'] : [];
+    
+    // If fees_json comes directly from JavaScript, parse it
+    if (isset($_POST['fees_json']) && !empty($_POST['fees_json'])) {
+        $fees_json = $_POST['fees_json'];
+    } else {
+        // Build fees_json from individual fee inputs
+        $fees_data = [];
+        if (!empty($_POST)) {
+            foreach ($_POST as $key => $value) {
+                if (strpos($key, 'fee_') === 0) {
+                    $fee_name = substr($key, 5);
+                    $amount = isset($value) && $value !== '' ? floatval($value) : 0;
+                    if ($amount > 0) {
+                        $fees_data[urldecode($fee_name)] = $amount;
+                    }
+                }
+            }
+        }
+        if (!empty($fees_data)) {
+            $fees_json = json_encode($fees_data);
+        }
+    }
+    
     $admission_amount = isset($_POST['admission_amount']) && $_POST['admission_amount'] !== '' ? floatval($_POST['admission_amount']) : 0.00;
-    $fee = isset($_POST['fee']) && $_POST['fee'] !== '' ? floatval($_POST['fee']) : 0.00;
     $is_active = isset($_POST['is_active']) ? 1 : 0;
     $remark = isset($_POST['remark']) && trim($_POST['remark']) !== '' ? trim($_POST['remark']) : null;
     $force_add = isset($_POST['force_add']) ? true : false;
@@ -79,11 +130,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // Update existing student
             if ($photo_path) {
-                $stmt = $conn->prepare("UPDATE students SET name=?, class=?, batch=?, roll_number=?, address=?, phone=?, email=?, photo=?, admission_amount=?, fee=?, is_active=?, remark=? WHERE id=? AND org_id=?");
-                $stmt->bind_param("ssssssssddiisi", $name, $class, $batch, $roll_number, $address, $phone, $email, $photo_path, $admission_amount, $fee, $is_active, $remark, $student_id, $org_id);
+                $stmt = $conn->prepare("UPDATE students SET name=?, class=?, batch=?, roll_number=?, address=?, phone=?, email=?, photo=?, sex=?, sex_other=?, date_of_birth=?, place_of_birth=?, nationality=?, mother_tongue=?, religion=?, religion_other=?, community=?, community_other=?, native_district=?, pin_code=?, parent_guardian_name=?, parent_contact=?, exam_name=?, exam_total_marks=?, exam_marks_obtained=?, exam_percentage=?, exam_grade=?, admission_amount=?, fees_json=?, is_active=?, remark=? WHERE id=? AND org_id=?");
+                $stmt->bind_param("ssssssssssssssssssssssiidddsisii", $name, $class, $batch, $roll_number, $address, $phone, $email, $photo_path, $sex, $sex_other, $date_of_birth, $place_of_birth, $nationality, $mother_tongue, $religion, $religion_other, $community, $community_other, $native_district, $pin_code, $parent_guardian_name, $parent_contact, $exam_name, $exam_total_marks, $exam_marks_obtained, $exam_percentage, $exam_grade, $admission_amount, $fees_json, $is_active, $remark, $student_id, $org_id);
             } else {
-                $stmt = $conn->prepare("UPDATE students SET name=?, class=?, batch=?, roll_number=?, address=?, phone=?, email=?, admission_amount=?, fee=?, is_active=?, remark=? WHERE id=? AND org_id=?");
-                $stmt->bind_param("sssssssddiisi", $name, $class, $batch, $roll_number, $address, $phone, $email, $admission_amount, $fee, $is_active, $remark, $student_id, $org_id);
+                $stmt = $conn->prepare("UPDATE students SET name=?, class=?, batch=?, roll_number=?, address=?, phone=?, email=?, sex=?, sex_other=?, date_of_birth=?, place_of_birth=?, nationality=?, mother_tongue=?, religion=?, religion_other=?, community=?, community_other=?, native_district=?, pin_code=?, parent_guardian_name=?, parent_contact=?, exam_name=?, exam_total_marks=?, exam_marks_obtained=?, exam_percentage=?, exam_grade=?, admission_amount=?, fees_json=?, is_active=?, remark=? WHERE id=? AND org_id=?");
+                $stmt->bind_param("sssssssssssssssssssssiiidddsisii", $name, $class, $batch, $roll_number, $address, $phone, $email, $sex, $sex_other, $date_of_birth, $place_of_birth, $nationality, $mother_tongue, $religion, $religion_other, $community, $community_other, $native_district, $pin_code, $parent_guardian_name, $parent_contact, $exam_name, $exam_total_marks, $exam_marks_obtained, $exam_percentage, $exam_grade, $admission_amount, $fees_json, $is_active, $remark, $student_id, $org_id);
             }
 
             if ($stmt->execute()) {
@@ -111,17 +162,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $payCheck->execute();
                     $payRes = $payCheck->get_result();
 
+                    $admission_due = -abs($admission_amount);
+
                     if ($payRes->num_rows > 0) {
-                        // Update existing payment
+                        // Update existing payment to reflect negative due
                         $payRow = $payRes->fetch_assoc();
                         $payUpdate = $conn->prepare("UPDATE student_payments SET amount = ? WHERE id = ?");
-                        $payUpdate->bind_param("di", $admission_amount, $payRow['id']);
+                        $payUpdate->bind_param("di", $admission_due, $payRow['id']);
                         $payUpdate->execute();
                     } else {
                         // Create new payment if not exists (and amount > 0)
                         if ($admission_amount > 0) {
                             $payInsert = $conn->prepare("INSERT INTO student_payments (student_id, amount, transaction_type, category, description) VALUES (?, ?, 'credit', 'Admission', 'Admission Fee')");
-                            $payInsert->bind_param("id", $student_id, $admission_amount);
+                            $payInsert->bind_param("id", $student_id, $admission_due);
                             $payInsert->execute();
                         }
                     }
@@ -137,16 +190,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         } else {
             // Add new student
-            $stmt = $conn->prepare("INSERT INTO students (org_id, name, class, batch, roll_number, address, phone, email, photo, admission_amount, fee, is_active, remark) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param("issssssssddis", $org_id, $name, $class, $batch, $roll_number, $address, $phone, $email, $photo_path, $admission_amount, $fee, $is_active, $remark);
+            $stmt = $conn->prepare("INSERT INTO students (org_id, name, class, batch, roll_number, address, phone, email, photo, sex, sex_other, date_of_birth, place_of_birth, nationality, mother_tongue, religion, religion_other, community, community_other, native_district, pin_code, parent_guardian_name, parent_contact, exam_name, exam_total_marks, exam_marks_obtained, exam_percentage, exam_grade, admission_amount, fees_json, is_active, remark) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param("isssssssssssssssssssssssiddsdsis", $org_id, $name, $class, $batch, $roll_number, $address, $phone, $email, $photo_path, $sex, $sex_other, $date_of_birth, $place_of_birth, $nationality, $mother_tongue, $religion, $religion_other, $community, $community_other, $native_district, $pin_code, $parent_guardian_name, $parent_contact, $exam_name, $exam_total_marks, $exam_marks_obtained, $exam_percentage, $exam_grade, $admission_amount, $fees_json, $is_active, $remark);
 
             if ($stmt->execute()) {
                 $new_student_id = $stmt->insert_id;
 
-                // Create Admission Payment
+                // Create Admission Payment as negative due
                 if ($admission_amount > 0) {
+                    $admission_due = -abs($admission_amount);
                     $payStmt = $conn->prepare("INSERT INTO student_payments (student_id, amount, transaction_type, category, description) VALUES (?, ?, 'credit', 'Admission', 'Admission Fee')");
-                    $payStmt->bind_param("id", $new_student_id, $admission_amount);
+                    $payStmt->bind_param("id", $new_student_id, $admission_due);
                     $payStmt->execute();
                 }
 

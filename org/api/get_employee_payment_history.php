@@ -1,0 +1,77 @@
+<?php
+// org/api/get_employee_payment_history.php
+session_start();
+require '../../config.php';
+require '../../functions.php';
+
+header('Content-Type: application/json');
+
+if (!isOrg()) {
+    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+    exit;
+}
+
+$org_id = $_SESSION['user_id'];
+$employee_id = isset($_GET['employee_id']) ? intval($_GET['employee_id']) : 0;
+
+if ($employee_id <= 0) {
+    echo json_encode(['success' => false, 'message' => 'Invalid employee ID']);
+    exit;
+}
+
+// Verify employee belongs to org
+$check_stmt = $conn->prepare("SELECT id FROM employees WHERE id = ? AND org_id = ?");
+$check_stmt->bind_param("ii", $employee_id, $org_id);
+$check_stmt->execute();
+$check_result = $check_stmt->get_result();
+
+if ($check_result->num_rows === 0) {
+    echo json_encode(['success' => false, 'message' => 'Employee not found']);
+    exit;
+}
+
+// Fetch payment history
+$stmt = $conn->prepare("
+    SELECT id, amount, transaction_type, category, description, payment_date, created_at
+    FROM employee_payments
+    WHERE employee_id = ?
+    ORDER BY payment_date DESC, created_at DESC
+");
+
+$stmt->bind_param("i", $employee_id);
+$stmt->execute();
+$result = $stmt->get_result();
+
+$payments = [];
+$total_paid = 0;
+$total_deductions = 0;
+
+while ($row = $result->fetch_assoc()) {
+    // Calculate totals
+    if (in_array($row['transaction_type'], ['salary', 'bonus', 'advance'])) {
+        $total_paid += $row['amount'];
+    } elseif ($row['transaction_type'] === 'deduction') {
+        $total_deductions += $row['amount'];
+    }
+    
+    $payments[] = [
+        'id' => $row['id'],
+        'amount' => $row['amount'],
+        'transaction_type' => $row['transaction_type'],
+        'category' => $row['category'],
+        'description' => $row['description'],
+        'payment_date' => $row['payment_date'],
+        'created_at' => $row['created_at']
+    ];
+}
+
+echo json_encode([
+    'success' => true,
+    'payments' => $payments,
+    'total_paid' => $total_paid,
+    'total_deductions' => $total_deductions,
+    'net_payment' => $total_paid - $total_deductions
+]);
+
+$stmt->close();
+?>

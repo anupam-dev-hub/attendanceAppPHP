@@ -13,10 +13,14 @@ DROP TABLE IF EXISTS fee_transactions;
 DROP TABLE IF EXISTS fee_payments;
 DROP TABLE IF EXISTS fees;
 DROP TABLE IF EXISTS attendance;
+DROP TABLE IF EXISTS employee_documents;
+DROP TABLE IF EXISTS employee_payments;
 DROP TABLE IF EXISTS emp_documents;
 DROP TABLE IF EXISTS employees;
 DROP TABLE IF EXISTS org_documents;
+DROP TABLE IF EXISTS org_fees;
 DROP TABLE IF EXISTS subscriptions;
+DROP TABLE IF EXISTS student_payments;
 DROP TABLE IF EXISTS students;
 DROP TABLE IF EXISTS organizations;
 DROP TABLE IF EXISTS admins;
@@ -68,6 +72,19 @@ CREATE TABLE IF NOT EXISTS subscriptions (
     FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE
 );
 
+-- Organization Fees
+CREATE TABLE IF NOT EXISTS org_fees (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    org_id INT NOT NULL,
+    fee_name VARCHAR(100) NOT NULL,
+    is_default BOOLEAN DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_org_fee (org_id, fee_name),
+    INDEX idx_org_id (org_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Students
 CREATE TABLE IF NOT EXISTS students (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -80,7 +97,27 @@ CREATE TABLE IF NOT EXISTS students (
     phone VARCHAR(20),
     email VARCHAR(100),
     photo VARCHAR(255),
+    sex ENUM('Male', 'Female', 'Other') DEFAULT NULL,
+    sex_other VARCHAR(50) DEFAULT NULL,
+    date_of_birth DATE DEFAULT NULL,
+    place_of_birth VARCHAR(100) DEFAULT NULL,
+    nationality VARCHAR(50) DEFAULT 'Indian',
+    mother_tongue VARCHAR(50) DEFAULT NULL,
+    religion ENUM('Hindu', 'Muslim', 'Christian', 'Other') DEFAULT NULL,
+    religion_other VARCHAR(50) DEFAULT NULL,
+    community ENUM('ST', 'SC', 'SC(A)', 'BC', 'General', 'Other') DEFAULT NULL,
+    community_other VARCHAR(50) DEFAULT NULL,
+    native_district VARCHAR(100) DEFAULT NULL,
+    pin_code VARCHAR(10) DEFAULT NULL,
+    parent_guardian_name VARCHAR(255) DEFAULT NULL,
+    parent_contact VARCHAR(20) DEFAULT NULL,
+    exam_name VARCHAR(255) DEFAULT NULL,
+    exam_total_marks INT DEFAULT NULL,
+    exam_marks_obtained DECIMAL(10,2) DEFAULT NULL,
+    exam_percentage DECIMAL(5,2) DEFAULT NULL,
+    exam_grade VARCHAR(10) DEFAULT NULL,
     admission_amount DECIMAL(10, 2) DEFAULT 0.00,
+    fees_json JSON DEFAULT NULL COMMENT 'Stores fees as JSON array',
     is_active BOOLEAN DEFAULT 1,
     remark TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -95,28 +132,46 @@ CREATE TABLE IF NOT EXISTS student_documents (
     FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
 );
 
--- Employees
+-- Employees Table
 CREATE TABLE IF NOT EXISTS employees (
     id INT AUTO_INCREMENT PRIMARY KEY,
     org_id INT NOT NULL,
-    name VARCHAR(100) NOT NULL,
-    address TEXT,
-    phone VARCHAR(20),
-    alt_phone VARCHAR(20),
-    email VARCHAR(100),
-    qualification VARCHAR(100),
-    salary DECIMAL(10, 2),
-    salary_date INT, -- Day of the month (1-31)
+    name VARCHAR(255) NOT NULL,
+    phone VARCHAR(20) NOT NULL,
+    email VARCHAR(255) DEFAULT NULL,
+    address TEXT DEFAULT NULL,
+    designation VARCHAR(100) DEFAULT NULL,
+    department VARCHAR(100) DEFAULT NULL,
+    salary DECIMAL(10, 2) DEFAULT 0.00,
+    photo VARCHAR(255) DEFAULT NULL,
+    is_active TINYINT(1) DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE
 );
 
--- Employee Documents
-CREATE TABLE IF NOT EXISTS emp_documents (
+-- Employee Documents Table
+CREATE TABLE IF NOT EXISTS employee_documents (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    emp_id INT NOT NULL,
-    file_path VARCHAR(255) NOT NULL,
-    FOREIGN KEY (emp_id) REFERENCES employees(id) ON DELETE CASCADE
+    employee_id INT NOT NULL,
+    file_name VARCHAR(255) NOT NULL,
+    file_path VARCHAR(500) NOT NULL,
+    document_type ENUM('qualification', 'supporting') NOT NULL DEFAULT 'supporting',
+    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE
+);
+
+-- Employee Payments Table
+CREATE TABLE IF NOT EXISTS employee_payments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    employee_id INT NOT NULL,
+    amount DECIMAL(10, 2) NOT NULL,
+    transaction_type ENUM('salary', 'bonus', 'deduction', 'advance') NOT NULL,
+    category VARCHAR(50) NOT NULL,
+    description TEXT,
+    payment_date DATE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE
 );
 
 -- Attendance

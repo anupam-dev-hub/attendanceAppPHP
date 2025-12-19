@@ -30,23 +30,7 @@ if ($is_active) {
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-50 font-sans antialiased">
-    <nav class="bg-teal-600 shadow-lg">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex items-center">
-                    <a href="dashboard.php" class="text-white text-xl font-bold tracking-wide"><?php echo htmlspecialchars($_SESSION['org_name']); ?></a>
-                </div>
-                <div class="flex items-center space-x-6">
-                    <a href="subscribe.php" class="text-white hover:text-teal-100 font-medium transition">Subscription</a>
-                    <?php if ($is_active): ?>
-                        <a href="students.php" class="text-white hover:text-teal-100 font-medium transition">Students</a>
-                        <a href="employees.php" class="text-white hover:text-teal-100 font-medium transition">Employees</a>
-                    <?php endif; ?>
-                    <a href="../logout.php" class="text-white hover:text-red-200 font-medium transition">Logout</a>
-                </div>
-            </div>
-        </div>
-    </nav>
+    <?php include 'navbar.php'; ?>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div class="mb-8">
@@ -80,6 +64,12 @@ if ($is_active) {
                     <h3 class="text-xl font-semibold text-gray-800 mb-4">Employees</h3>
                     <p class="text-gray-500 mb-4 text-sm">Manage employee details and payroll.</p>
                     <a href="employees.php" class="inline-block bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded transition">Manage</a>
+                </div>
+
+                <div class="bg-white shadow-lg rounded-lg p-6 text-center hover:shadow-xl transition duration-300">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4">Finance</h3>
+                    <p class="text-gray-500 mb-4 text-sm">View reports, manage fees and payments.</p>
+                    <a href="finance_overview.php" class="inline-block bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded transition">View</a>
                 </div>
 
                  <div class="bg-white shadow-lg rounded-lg p-6 text-center hover:shadow-xl transition duration-300">

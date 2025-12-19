@@ -1,18 +1,109 @@
 // org/js/students.js
 
+// Toggle Sex Other field
+function toggleSexOther() {
+    const sexSelect = document.getElementById('studentSex');
+    const sexOtherGroup = document.getElementById('sexOtherGroup');
+    if (sexSelect.value === 'Other') {
+        sexOtherGroup.style.display = 'flex';
+    } else {
+        sexOtherGroup.style.display = 'none';
+        document.getElementById('studentSexOther').value = '';
+    }
+}
+
+// Toggle Religion Other field
+function toggleReligionOther() {
+    const religionSelect = document.getElementById('studentReligion');
+    const religionOtherGroup = document.getElementById('religionOtherGroup');
+    if (religionSelect.value === 'Other') {
+        religionOtherGroup.style.display = 'flex';
+    } else {
+        religionOtherGroup.style.display = 'none';
+        document.getElementById('studentReligionOther').value = '';
+    }
+}
+
+// Toggle Community Other field
+function toggleCommunityOther() {
+    const communitySelect = document.getElementById('studentCommunity');
+    const communityOtherGroup = document.getElementById('communityOtherGroup');
+    if (communitySelect.value === 'Other') {
+        communityOtherGroup.style.display = 'flex';
+    } else {
+        communityOtherGroup.style.display = 'none';
+        document.getElementById('studentCommunityOther').value = '';
+    }
+}
+
 $(document).ready(function () {
     var table = $('#studentsTable').DataTable({
         responsive: true,
         "pageLength": 10,
+        "lengthMenu": [[10, 25, 50, -1], [10, 25, 50, "All"]],
         "order": [
             [2, "asc"],
             [4, "asc"]
         ], // Sort by Class (col 2) then Roll No (col 4)
-        "columnDefs": [{
-            "orderable": false,
-            "targets": [1, 6, 7, 8]
-        } // Photo, Status, QR Code, and Actions columns not sortable
-        ]
+        "columnDefs": [
+            {
+                "orderable": false,
+                "targets": [1, 7, 8, 9]
+            }, // Photo, Status, QR Code, and Actions columns not sortable
+            {
+                "responsivePriority": 1,
+                "targets": 0
+            }, // Name - always visible
+            {
+                "responsivePriority": 2,
+                "targets": 9
+            }, // Actions - always visible
+            {
+                "responsivePriority": 10001,
+                "targets": 1
+            }, // Photo - hide first
+            {
+                "responsivePriority": 10002,
+                "targets": 5
+            }, // Balance - hide second
+            {
+                "responsivePriority": 10003,
+                "targets": 6
+            }, // Phone - hide third
+            {
+                "responsivePriority": 10004,
+                "targets": 8
+            }, // QR - hide fourth
+            {
+                "responsivePriority": 3,
+                "targets": 2
+            }, // Class - keep visible longer
+            {
+                "responsivePriority": 4,
+                "targets": 3
+            }, // Batch - keep visible longer
+            {
+                "responsivePriority": 5,
+                "targets": 7
+            }, // Status - keep visible longer
+            {
+                "responsivePriority": 6,
+                "targets": 4
+            } // Roll No - keep visible longer
+        ],
+        "language": {
+            "lengthMenu": "Show _MENU_ students",
+            "info": "Showing _START_ to _END_ of _TOTAL_ students",
+            "infoEmpty": "No students to show",
+            "infoFiltered": "(filtered from _MAX_ total students)",
+            "search": "Search:",
+            "zeroRecords": "No matching students found"
+        }
+    });
+    
+    // Force responsive recalculation on window resize
+    $(window).on('resize', function() {
+        table.responsive.recalc();
     });
 
     // Class filter (column 2)
@@ -41,10 +132,40 @@ $(document).ready(function () {
     $('#statusFilter').on('change', function () {
         table.draw();
     });
+
+    // Handle payment button clicks via event delegation
+    $(document).on('click', 'button.payment-btn', function(e) {
+        e.preventDefault();
+        const studentData = $(this).attr('data-student-fee');
+        if (studentData) {
+            try {
+                const student = JSON.parse(studentData);
+                openPaymentModal(student);
+            } catch (error) {
+                Swal.fire('Error', 'Failed to open payment modal', 'error');
+            }
+        }
+    });
 });
 
 // Form submission with loading animation
 document.getElementById('studentForm').addEventListener('submit', function (e) {
+    // Collect fees data before submission
+    const feesJson = collectFeeData();
+    
+    if (feesJson) {
+        // Add hidden input for fees_json
+        let feesInput = document.getElementById('feesJsonInput');
+        if (!feesInput) {
+            feesInput = document.createElement('input');
+            feesInput.type = 'hidden';
+            feesInput.id = 'feesJsonInput';
+            feesInput.name = 'fees_json';
+            document.getElementById('studentForm').appendChild(feesInput);
+        }
+        feesInput.value = feesJson;
+    }
+    
     const submitBtn = document.getElementById('submitBtn');
     const submitBtnText = document.getElementById('submitBtnText');
     const submitBtnSpinner = document.getElementById('submitBtnSpinner');
@@ -69,6 +190,9 @@ function openAddModal() {
     // Clear documents preview
     document.getElementById('existingDocumentsList').innerHTML = '';
     document.getElementById('existingDocumentsPreview').classList.add('hidden');
+    
+    // Load organization fees
+    loadOrgFees();
     document.getElementById('newDocumentsList').innerHTML = '';
     document.getElementById('newDocumentsPreview').classList.add('hidden');
 
@@ -104,8 +228,51 @@ function openEditModal(student) {
     document.getElementById('studentPhone').value = student.phone;
     document.getElementById('studentEmail').value = student.email || '';
     document.getElementById('studentAddress').value = student.address || '';
+    
+    // Populate new personal fields
+    document.getElementById('studentSex').value = student.sex || '';
+    if (student.sex === 'Other') {
+        document.getElementById('sexOtherGroup').style.display = 'flex';
+        document.getElementById('studentSexOther').value = student.sex_other || '';
+    }
+    document.getElementById('studentDOB').value = student.date_of_birth || '';
+    document.getElementById('studentPlaceOfBirth').value = student.place_of_birth || '';
+    document.getElementById('studentNationality').value = student.nationality || 'Indian';
+    document.getElementById('studentMotherTongue').value = student.mother_tongue || '';
+    document.getElementById('studentReligion').value = student.religion || '';
+    if (student.religion === 'Other') {
+        document.getElementById('religionOtherGroup').style.display = 'flex';
+        document.getElementById('studentReligionOther').value = student.religion_other || '';
+    }
+    document.getElementById('studentCommunity').value = student.community || '';
+    if (student.community === 'Other') {
+        document.getElementById('communityOtherGroup').style.display = 'flex';
+        document.getElementById('studentCommunityOther').value = student.community_other || '';
+    }
+    document.getElementById('studentNativeDistrict').value = student.native_district || '';
+    document.getElementById('studentPinCode').value = student.pin_code || '';
+    
+    // Populate parent/guardian info
+    document.getElementById('studentParentName').value = student.parent_guardian_name || '';
+    document.getElementById('studentParentContact').value = student.parent_contact || '';
+    
+    // Populate examination info
+    document.getElementById('studentExamName').value = student.exam_name || '';
+    document.getElementById('studentExamTotalMarks').value = student.exam_total_marks || '';
+    document.getElementById('studentExamMarksObtained').value = student.exam_marks_obtained || '';
+    document.getElementById('studentExamPercentage').value = student.exam_percentage || '';
+    document.getElementById('studentExamGrade').value = student.exam_grade || '';
+    
     document.getElementById('studentAdmission').value = student.admission_amount || '0.00';
-    document.getElementById('studentFee').value = student.fee || '0.00';
+    
+    // Load fees and populate them
+    loadOrgFees();
+    setTimeout(() => {
+        if (student.fees_json) {
+            populateFeesInModal(student.fees_json);
+        }
+    }, 100);
+    
     document.getElementById('studentIsActive').checked = student.is_active == 1;
     document.getElementById('studentRemark').value = student.remark || '';
 
@@ -671,18 +838,92 @@ function viewStudent(student) {
     const loadingOverlay = document.getElementById('viewModalLoadingOverlay');
     loadingOverlay.classList.remove('hidden');
 
-    // Populate student details
+    // Populate student details - Personal Information
     document.getElementById('viewName').innerText = student.name || '-';
     document.getElementById('viewRoll').innerText = student.roll_number || 'Not Assigned';
+    
+    // Handle Sex with "Other" specification
+    let sexDisplay = student.sex || '-';
+    if (student.sex === 'Other' && student.sex_other) {
+        sexDisplay = student.sex_other;
+    }
+    document.getElementById('viewSex').innerText = sexDisplay;
+    
+    // Date of Birth - format if exists
+    let dobDisplay = '-';
+    if (student.date_of_birth) {
+        const dobDate = new Date(student.date_of_birth);
+        dobDisplay = dobDate.toLocaleDateString('en-IN', { year: 'numeric', month: 'long', day: 'numeric' });
+    }
+    document.getElementById('viewDOB').innerText = dobDisplay;
+    
+    document.getElementById('viewPlaceOfBirth').innerText = student.place_of_birth || '-';
+    document.getElementById('viewNationality').innerText = student.nationality || '-';
+    document.getElementById('viewMotherTongue').innerText = student.mother_tongue || '-';
+    
+    // Handle Religion with "Other" specification
+    let religionDisplay = student.religion || '-';
+    if (student.religion === 'Other' && student.religion_other) {
+        religionDisplay = student.religion_other;
+    }
+    document.getElementById('viewReligion').innerText = religionDisplay;
+    
+    // Handle Community with "Other" specification
+    let communityDisplay = student.community || '-';
+    if (student.community === 'Other' && student.community_other) {
+        communityDisplay = student.community_other;
+    }
+    document.getElementById('viewCommunity').innerText = communityDisplay;
+    
+    document.getElementById('viewNativeDistrict').innerText = student.native_district || '-';
+    document.getElementById('viewPinCode').innerText = student.pin_code || '-';
     document.getElementById('viewPhone').innerText = student.phone || '-';
     document.getElementById('viewEmail').innerText = student.email || '-';
     document.getElementById('viewAddress').innerText = student.address || '-';
+    
+    // Parent/Guardian Information
+    document.getElementById('viewParentName').innerText = student.parent_guardian_name || '-';
+    document.getElementById('viewParentContact').innerText = student.parent_contact || '-';
+    
+    // Previous Examination Details
+    document.getElementById('viewExamName').innerText = student.exam_name || '-';
+    document.getElementById('viewExamTotalMarks').innerText = student.exam_total_marks || '-';
+    document.getElementById('viewExamMarksObtained').innerText = student.exam_marks_obtained || '-';
+    document.getElementById('viewExamPercentage').innerText = student.exam_percentage ? student.exam_percentage + '%' : '-';
+    document.getElementById('viewExamGrade').innerText = student.exam_grade || '-';
+    
+    // Academic and Other Details
     document.getElementById('viewClass').innerText = student.class || '-';
     document.getElementById('viewBatch').innerText = student.batch || '-';
     document.getElementById('viewStatus').innerText = student.is_active == 1 ? 'Active' : 'Inactive';
     document.getElementById('viewRemark').innerText = student.remark || '-';
     document.getElementById('viewAdmission').innerText = student.admission_amount ? '₹' + student.admission_amount : '-';
-    document.getElementById('viewFee').innerText = student.fee ? '₹' + student.fee : '-';
+    
+    // Display fees from fees_json
+    const feesDisplay = document.getElementById('feesDisplay');
+    if (student.fees_json) {
+        try {
+            const feesData = JSON.parse(student.fees_json);
+            let feesHtml = '<p class="text-xs text-gray-500 uppercase font-semibold mb-2">Fees</p>';
+            feesHtml += '<div class="space-y-2">';
+            
+            let totalFees = 0;
+            for (const [feeName, amount] of Object.entries(feesData)) {
+                feesHtml += `<div class="flex justify-between items-center"><span class="text-sm text-gray-600">${feeName}:</span><span class="text-sm font-medium text-gray-900">₹${parseFloat(amount).toFixed(2)}</span></div>`;
+                totalFees += parseFloat(amount);
+            }
+            
+            feesHtml += `<div class="border-t border-gray-200 pt-2 mt-2 flex justify-between items-center"><span class="text-sm font-semibold text-gray-700">Total Fees:</span><span class="text-sm font-bold text-teal-600">₹${totalFees.toFixed(2)}</span></div>`;
+            feesHtml += '</div>';
+            feesDisplay.innerHTML = feesHtml;
+        } catch (e) {
+            console.error('Error parsing fees:', e);
+            feesDisplay.innerHTML = '<p class="text-sm text-gray-500">-</p>';
+        }
+    } else {
+        feesDisplay.innerHTML = '<p class="text-xs text-gray-500 uppercase font-semibold mb-2">Fees</p><p class="text-sm text-gray-500">No fees configured</p>';
+    }
+    
     document.getElementById('viewStudentId').innerText = 'STU-' + student.id;
 
 
@@ -1071,38 +1312,174 @@ function viewFullPhoto() {
 
 // Payment Modal Functions
 function openPaymentModal(student) {
-    document.getElementById('paymentStudentId').value = student.id;
-    document.getElementById('paymentStudentName').value = student.name;
-    document.getElementById('paymentAmount').value = '';
-    document.getElementById('paymentDescription').value = '';
-    document.getElementById('paymentModal').classList.remove('hidden');
+    // Fetch student's current balance and pending payments
+    Promise.all([
+        fetch(`get_student_details.php?student_id=${student.id}`).then(r => r.json()),
+        fetch(`api/get_pending_payments.php?student_id=${student.id}`).then(r => r.json())
+    ])
+        .then(([balanceData, pendingData]) => {
+            if (!balanceData.success) {
+                Swal.fire('Error', balanceData.message || 'Failed to fetch student balance', 'error');
+                return;
+            }
+            
+            const currentBalance = parseFloat(balanceData.student.balance || 0);
+            let pendingPaymentsHtml = '';
+            
+            // Build pending payments HTML
+            if (pendingData.success && pendingData.pending_payments && pendingData.pending_payments.length > 0) {
+                pendingPaymentsHtml = '<div class="mb-4 p-3 bg-yellow-50 border border-yellow-300 rounded-md"><div class="text-sm font-semibold text-yellow-800 mb-2">📋 Pending Payments (Click to pay)</div>';
+                
+                pendingData.pending_payments.forEach(category => {
+                    const feeType = category.fee_type;
+                    const netAmount = category.net_amount; // negative = owed
+                    const displayAmount = netAmount.toFixed(2);
+                    const payAmount = Math.abs(netAmount);
+                    pendingPaymentsHtml += `
+                        <div class="mb-2 p-2 bg-white border border-yellow-200 rounded cursor-pointer hover:bg-yellow-100 transition" onclick="quickPayPending('${student.id}', '${feeType.replace(/'/g, "\\'")}', ${payAmount})">
+                            <div class="flex justify-between items-center">
+                                <span class="font-medium text-gray-700">${feeType}</span>
+                                <span class="text-yellow-700 font-bold">₹${displayAmount}</span>
+                            </div>
+                            <div class="text-xs text-gray-600 mt-1">${category.items.length} item(s)</div>
+                        </div>
+                    `;
+                });
+                
+                pendingPaymentsHtml += `<div class="mt-2 pt-2 border-t border-yellow-300">
+                    <div class="flex justify-between items-center text-sm font-semibold">
+                        <span>Total Pending:</span>
+                        <span class="text-red-600">₹${pendingData.total_pending.toFixed(2)}</span>
+                    </div>
+                </div></div>`;
+            }
+            
+            Swal.fire({
+                title: 'Record Student Payment',
+                html: `
+                    <div class="text-left">
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Student Name</label>
+                            <input type="text" value="${student.name}" disabled class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-700">
+                        </div>
+                        
+                        <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                            <p class="text-sm text-gray-700"><strong>Current Balance:</strong> ₹${currentBalance.toFixed(2)}</p>
+                        </div>
+                        
+                        ${pendingPaymentsHtml}
+                        
+                        <div class="p-3 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-700">
+                            Use the pending payments list above to record payments. Manual entry is disabled for accuracy.
+                        </div>
+                    </div>
+                `,
+                showCancelButton: true,
+                cancelButtonText: 'Close',
+                showConfirmButton: false
+            });
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            Swal.fire('Error', 'Failed to load student information', 'error');
+        });
+}
+
+function quickPayPending(studentId, feeType, amount) {
+    // Auto-populate form with pending payment details
+    const student = { id: studentId };
+    
+    // Close current alert if any
+    Swal.close();
+    
+    // Fetch fresh data and reopen with pre-filled info
+    fetch(`get_student_details.php?student_id=${studentId}`)
+        .then(r => r.json())
+        .then(data => {
+            if (!data.success) {
+                Swal.fire('Error', 'Failed to load student details', 'error');
+                return;
+            }
+            
+            const currentBalance = parseFloat(data.student.balance || 0);
+            
+            Swal.fire({
+                title: 'Record Payment - ' + feeType,
+                html: `
+                    <div class="text-left">
+                        <div class="mb-4 p-3 bg-green-50 border border-green-300 rounded-md">
+                            <p class="text-sm text-green-800"><strong>Pending Amount:</strong> ₹${amount.toFixed(2)}</p>
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Amount (₹)</label>
+                            <input type="number" id="paymentAmount" value="${amount.toFixed(2)}" min="0.01" step="0.01" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                            <select id="paymentCategory" class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100" disabled>
+                                <option value="${feeType}" selected>${feeType}</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Description (Optional)</label>
+                            <textarea id="paymentDescription" class="w-full px-3 py-2 border border-gray-300 rounded-md" rows="2" placeholder="Enter description..."></textarea>
+                        </div>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonText: 'Record Payment',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#0d9488',
+                didOpen: () => {
+                    setTimeout(() => {
+                        document.getElementById('paymentAmount').focus();
+                    }, 100);
+                },
+                preConfirm: () => {
+                    const amount = parseFloat(document.getElementById('paymentAmount').value);
+                    const category = document.getElementById('paymentCategory').value;
+                    const description = document.getElementById('paymentDescription').value;
+                    
+                    if (!amount || amount <= 0) {
+                        Swal.showValidationMessage('Please enter a valid amount');
+                        return false;
+                    }
+                    
+                    return {
+                        student_id: studentId,
+                        amount: amount,
+                        category: category,
+                        description: description,
+                        current_balance: currentBalance
+                    };
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    submitPayment(result.value);
+                }
+            });
+        });
 }
 
 function closePaymentModal() {
-    document.getElementById('paymentModal').classList.add('hidden');
+    // Not needed with SweetAlert2, but kept for compatibility
 }
 
-function submitPayment() {
-    const studentId = document.getElementById('paymentStudentId').value;
-    const amount = document.getElementById('paymentAmount').value;
-    const category = document.getElementById('paymentCategory').value;
-    const description = document.getElementById('paymentDescription').value;
-
-    if (!amount || amount <= 0) {
-        Swal.fire('Error', 'Please enter a valid amount', 'error');
-        return;
-    }
-
-    const submitBtn = document.getElementById('submitPaymentBtn');
-    const originalText = submitBtn.innerText;
-    submitBtn.disabled = true;
-    submitBtn.innerText = 'Processing...';
+function submitPayment(paymentData) {
+    Swal.fire({
+        title: 'Processing...',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
 
     const formData = new FormData();
-    formData.append('student_id', studentId);
-    formData.append('amount', amount);
-    formData.append('category', category);
-    formData.append('description', description);
+    formData.append('student_id', paymentData.student_id);
+    formData.append('amount', paymentData.amount);
+    formData.append('category', paymentData.category);
+    formData.append('description', paymentData.description);
 
     fetch('api/save_payment.php', {
         method: 'POST',
@@ -1113,25 +1490,30 @@ function submitPayment() {
             if (data.success) {
                 Swal.fire({
                     icon: 'success',
-                    title: 'Payment Recorded',
+                    title: 'Success!',
                     text: 'Payment has been recorded successfully',
-                    timer: 1500,
-                    showConfirmButton: false
+                    confirmButtonColor: '#0d9488',
+                    timer: 2000
                 }).then(() => {
-                    closePaymentModal();
-                    // Optionally refresh data
+                    location.reload();
                 });
             } else {
-                Swal.fire('Error', data.message || 'Failed to record payment', 'error');
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: data.message || 'Failed to record payment',
+                    confirmButtonColor: '#dc2626'
+                });
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            Swal.fire('Error', 'An error occurred', 'error');
-        })
-        .finally(() => {
-            submitBtn.disabled = false;
-            submitBtn.innerText = originalText;
+            Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: 'An error occurred while recording payment',
+                confirmButtonColor: '#dc2626'
+            });
         });
 }
 
@@ -1152,18 +1534,14 @@ function downloadPhoto() {
 
 // Alternative download function with fetch and better error handling
 function downloadDocument(filePath, fileName) {
-    console.log('Downloading:', filePath, fileName);
-    
     fetch(filePath)
         .then(response => {
-            console.log('Fetch response:', response.status);
             if (!response.ok) {
                 throw new Error('Network response was not ok');
             }
             return response.blob();
         })
         .then(blob => {
-            console.log('Blob received:', blob.size, 'bytes');
             const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
@@ -1172,13 +1550,18 @@ function downloadDocument(filePath, fileName) {
             link.click();
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
-            console.log('Download triggered successfully');
         })
         .catch(error => {
-            console.error('Download failed:', error);
             // Fallback: open in new tab
-            alert('Direct download failed. Opening file in new tab...');
-            window.open(filePath, '_blank');
+            Swal.fire({
+                icon: 'info',
+                title: 'Download Notice',
+                text: 'Direct download failed. Opening file in new tab...',
+                confirmButtonColor: '#0d9488',
+                timer: 2000
+            }).then(() => {
+                window.open(filePath, '_blank');
+            });
         });
 }
 
@@ -1244,5 +1627,212 @@ function toggleStudentStatus(studentId, currentStatus, buttonElement) {
                     buttonElement.disabled = false;
                 });
         }
+    });
+}
+
+// Bulk deactivate by Class + Batch
+function deactivateClassBatch() {
+    const classVal = document.getElementById('classFilter').value;
+    const batchVal = document.getElementById('batchFilter').value;
+
+    if (!classVal || !batchVal) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Select Class & Batch',
+            text: 'Please select both Class and Batch to proceed.'
+        });
+        return;
+    }
+
+    // Show loading while fetching student list
+    Swal.fire({
+        title: 'Loading...',
+        text: 'Fetching student list',
+        allowOutsideClick: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+
+    // Fetch students matching the class and batch
+    fetch(`get_students_by_class_batch.php?class=${encodeURIComponent(classVal)}&batch=${encodeURIComponent(batchVal)}`)
+        .then(res => res.json())
+        .then(data => {
+            if (!data.success) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: data.message || 'Failed to fetch students'
+                });
+                return;
+            }
+
+            const students = data.students || [];
+            const count = data.count || 0;
+
+            if (count === 0) {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'No Active Students',
+                    text: `No active students found in ${classVal} - ${batchVal}`
+                });
+                return;
+            }
+
+            // Build student list HTML
+            let studentListHtml = `<div class="text-left mb-3">
+                <p class="mb-2"><strong>${count} active student${count === 1 ? '' : 's'}</strong> in <strong>${classVal}</strong> - <strong>${batchVal}</strong> will be deactivated:</p>
+                <div class="max-h-60 overflow-y-auto border border-gray-300 rounded p-3 bg-gray-50">
+                    <ul class="list-disc list-inside space-y-1">`;
+            
+            students.forEach(student => {
+                const rollNo = student.roll_number || 'N/A';
+                studentListHtml += `<li class="text-sm"><strong>${student.name}</strong> (Roll: ${rollNo})</li>`;
+            });
+            
+            studentListHtml += `</ul></div></div>`;
+
+            // Show confirmation with student list
+            Swal.fire({
+                title: 'Deactivate Students?',
+                html: studentListHtml,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Yes, deactivate all',
+                cancelButtonText: 'Cancel',
+                width: '600px'
+            }).then((result) => {
+                if (!result.isConfirmed) return;
+
+                const btn = document.getElementById('deactivateClassBatchBtn');
+                const originalText = btn.innerText;
+                btn.disabled = true;
+                btn.innerText = 'Processing...';
+
+                const formData = new FormData();
+                formData.append('class', classVal);
+                formData.append('batch', batchVal);
+
+                fetch('deactivate_class_batch.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            const updated = Number(data.updated) || 0;
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Done',
+                                text: `Deactivated ${updated} student${updated === 1 ? '' : 's'} successfully.`,
+                                timer: 1800,
+                                showConfirmButton: false
+                            }).then(() => {
+                                location.reload();
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: data.message || 'Failed to update students.'
+                            });
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Bulk deactivate error:', err);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'An unexpected error occurred.'
+                        });
+                    })
+                    .finally(() => {
+                        btn.disabled = false;
+                        btn.innerText = originalText;
+                    });
+            });
+        })
+        .catch(err => {
+            console.error('Error fetching students:', err);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Failed to load student list'
+            });
+        });
+}
+
+// Load and display organization fees
+async function loadOrgFees() {
+    try {
+        const response = await fetch('api/manage_fees.php?action=get_fees');
+        const data = await response.json();
+        
+        if (!data.success) {
+            console.error('Failed to load fees:', data.message);
+            return;
+        }
+        
+        const fees = data.fees || [];
+        const wrapper = document.getElementById('feeInputsWrapper');
+        
+        if (!wrapper) return;
+        
+        wrapper.innerHTML = '';
+        
+        if (fees.length === 0) {
+            wrapper.innerHTML = '<p class="text-sm text-gray-500 col-span-2">No fees configured. Contact administrator.</p>';
+            return;
+        }
+        
+        fees.forEach(fee => {
+            const inputId = `fee_${fee.id}`;
+            const fieldGroup = document.createElement('div');
+            fieldGroup.className = 'form-field-group';
+            fieldGroup.innerHTML = `
+                <label>${fee.fee_name}</label>
+                <input type="number" step="0.01" class="fee-input" id="${inputId}" data-fee-id="${fee.id}" data-fee-name="${fee.fee_name}" placeholder="0.00">
+            `;
+            wrapper.appendChild(fieldGroup);
+        });
+    } catch (error) {
+        console.error('Error loading fees:', error);
+    }
+}
+
+// Collect fees data from form and return as formatted string
+function collectFeeData() {
+    const feeInputs = document.querySelectorAll('.fee-input');
+    const feeData = {};
+    
+    feeInputs.forEach(input => {
+        const value = parseFloat(input.value) || 0;
+        if (value > 0) {
+            const feeName = input.getAttribute('data-fee-name');
+            feeData[feeName] = value;
+        }
+    });
+    
+    return Object.keys(feeData).length > 0 ? JSON.stringify(feeData) : null;
+}
+
+// Populate fees in edit modal
+function populateFeesInModal(feesJson) {
+    const feeInputs = document.querySelectorAll('.fee-input');
+    let feesData = {};
+    
+    try {
+        if (feesJson && typeof feesJson === 'string') {
+            feesData = JSON.parse(feesJson);
+        }
+    } catch (e) {
+        console.error('Error parsing fees JSON:', e);
+    }
+    
+    feeInputs.forEach(input => {
+        const feeName = input.getAttribute('data-fee-name');
+        input.value = feesData[feeName] || '';
     });
 }

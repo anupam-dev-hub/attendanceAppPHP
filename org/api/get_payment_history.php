@@ -40,19 +40,25 @@ $sql = "SELECT id, amount, transaction_type, category, description,
 $result = $conn->query($sql);
 
 $payments = [];
-$total_debit = 0.0;
-$total_credit = 0.0;
+$total_debit = 0.0;    // money paid (+)
+$total_credit = 0.0;   // money owed (- stored as credit)
+$net_balance = 0.0;    // running balance (paid - owed)
 
 if ($result) {
     while ($row = $result->fetch_assoc()) {
         $type = strtolower($row['transaction_type'] ?? '');
-        $amount = (float)$row['amount'];
+        $raw_amount = (float)$row['amount'];
+
+        // Normalize amounts: credits are stored negative (owed), debits positive (paid)
+        $amount = ($type === 'credit') ? -abs($raw_amount) : abs($raw_amount);
 
         if ($type === 'debit') {
-            $total_debit += $amount;
+            $total_debit += abs($amount);
         } elseif ($type === 'credit') {
-            $total_credit += $amount;
+            $total_credit += abs($amount);
         }
+
+        $net_balance += $amount;
 
         $payments[] = [
             'id' => (int)$row['id'],
@@ -65,7 +71,7 @@ if ($result) {
     }
 }
 
-$balance = $total_debit - $total_credit; // Net received minus outflows
+$balance = $net_balance; // Positive = paid ahead, Negative = amount due
 
 echo json_encode([
     'success' => true,

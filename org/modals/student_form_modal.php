@@ -56,6 +56,125 @@
                                 <label>Address</label>
                                 <input type="text" name="address" id="studentAddress">
                             </div>
+                            <div class="form-field-group">
+                                <label>Sex</label>
+                                <select name="sex" id="studentSex" onchange="toggleSexOther()">
+                                    <option value="">Select Sex</option>
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                    <option value="Other">Other (Specify)</option>
+                                </select>
+                            </div>
+                            <div class="form-field-group" id="sexOtherGroup" style="display: none;">
+                                <label>Specify Sex</label>
+                                <input type="text" name="sex_other" id="studentSexOther" placeholder="Please specify">
+                            </div>
+                            <div class="form-field-group">
+                                <label>Date of Birth</label>
+                                <input type="date" name="date_of_birth" id="studentDOB">
+                            </div>
+                            <div class="form-field-group">
+                                <label>Place of Birth</label>
+                                <input type="text" name="place_of_birth" id="studentPlaceOfBirth">
+                            </div>
+                            <div class="form-field-group">
+                                <label>Nationality</label>
+                                <input type="text" name="nationality" id="studentNationality" value="Indian">
+                            </div>
+                            <div class="form-field-group">
+                                <label>Mother Tongue</label>
+                                <input type="text" name="mother_tongue" id="studentMotherTongue">
+                            </div>
+                            <div class="form-field-group">
+                                <label>Religion</label>
+                                <select name="religion" id="studentReligion" onchange="toggleReligionOther()">
+                                    <option value="">Select Religion</option>
+                                    <option value="Hindu">Hindu</option>
+                                    <option value="Muslim">Muslim</option>
+                                    <option value="Christian">Christian</option>
+                                    <option value="Other">Other (Specify)</option>
+                                </select>
+                            </div>
+                            <div class="form-field-group" id="religionOtherGroup" style="display: none;">
+                                <label>Specify Religion</label>
+                                <input type="text" name="religion_other" id="studentReligionOther" placeholder="Please specify">
+                            </div>
+                            <div class="form-field-group">
+                                <label>Community</label>
+                                <select name="community" id="studentCommunity" onchange="toggleCommunityOther()">
+                                    <option value="">Select Community</option>
+                                    <option value="ST">ST</option>
+                                    <option value="SC">SC</option>
+                                    <option value="SC(A)">SC(A)</option>
+                                    <option value="BC">BC</option>
+                                    <option value="General">General</option>
+                                    <option value="Other">Other (Specify)</option>
+                                </select>
+                            </div>
+                            <div class="form-field-group" id="communityOtherGroup" style="display: none;">
+                                <label>Specify Community</label>
+                                <input type="text" name="community_other" id="studentCommunityOther" placeholder="Please specify">
+                            </div>
+                            <div class="form-field-group">
+                                <label>Native District</label>
+                                <input type="text" name="native_district" id="studentNativeDistrict">
+                            </div>
+                            <div class="form-field-group">
+                                <label>Pin Code</label>
+                                <input type="text" name="pin_code" id="studentPinCode" maxlength="10">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Parent/Guardian Info Card -->
+                    <div class="student-form-card form-span-2">
+                        <div class="student-form-section-title">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                            <span>Parent/Guardian Information</span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            <div class="form-field-group">
+                                <label>Name of Parent/Guardian</label>
+                                <input type="text" name="parent_guardian_name" id="studentParentName">
+                            </div>
+                            <div class="form-field-group">
+                                <label>Parent Contact</label>
+                                <input type="text" name="parent_contact" id="studentParentContact">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Previous Examination Info Card -->
+                    <div class="student-form-card form-span-2">
+                        <div class="student-form-section-title">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span>Previous Examination Details</span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            <div class="form-field-group sm:col-span-2">
+                                <label>Examination Name</label>
+                                <input type="text" name="exam_name" id="studentExamName" placeholder="e.g., Class 10 Board Exam">
+                            </div>
+                            <div class="form-field-group">
+                                <label>Total Marks (Out of)</label>
+                                <input type="number" name="exam_total_marks" id="studentExamTotalMarks" placeholder="e.g., 500">
+                            </div>
+                            <div class="form-field-group">
+                                <label>Marks Obtained</label>
+                                <input type="number" step="0.01" name="exam_marks_obtained" id="studentExamMarksObtained" placeholder="e.g., 425">
+                            </div>
+                            <div class="form-field-group">
+                                <label>Percentage (%)</label>
+                                <input type="number" step="0.01" name="exam_percentage" id="studentExamPercentage" placeholder="e.g., 85.00">
+                            </div>
+                            <div class="form-field-group">
+                                <label>Grade</label>
+                                <input type="text" name="exam_grade" id="studentExamGrade" placeholder="e.g., A+">
+                            </div>
                         </div>
                     </div>
 
@@ -76,13 +195,12 @@
                                 <label>Batch</label>
                                 <select name="batch" id="studentBatch" required>
                                     <?php
-                                    $startYear = 2025;
-                                    for ($i = 0; $i <= 5; $i++) {
-                                        $y1 = $startYear + $i;
-                                        $y2 = $y1 + 1;
-                                        $batchOption = "$y1-$y2";
-                                        echo "<option value='$batchOption'>$batchOption</option>";
-                                    }
+                                    $currentYear = date('Y');
+                                    $nextYear = $currentYear + 1;
+                                    echo "<option value='$currentYear-$nextYear'>$currentYear-$nextYear</option>";
+                                    $nextBatchYear = $nextYear;
+                                    $nextBatchYearEnd = $nextBatchYear + 1;
+                                    echo "<option value='$nextBatchYear-$nextBatchYearEnd'>$nextBatchYear-$nextBatchYearEnd</option>";
                                     ?>
                                 </select>
                             </div>
@@ -90,7 +208,7 @@
                     </div>
 
                     <!-- Financial Card -->
-                    <div class="student-form-card">
+                    <div class="student-form-card form-span-2">
                         <div class="student-form-section-title">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -102,9 +220,13 @@
                                 <label>Admission Amount</label>
                                 <input type="number" step="0.01" name="admission_amount" id="studentAdmission" placeholder="0.00">
                             </div>
-                            <div class="form-field-group">
-                                <label>Monthly/Course Fee</label>
-                                <input type="number" step="0.01" name="fee" id="studentFee" placeholder="0.00">
+                        </div>
+                        
+                        <!-- Dynamic Fees Section -->
+                        <div id="feesContainer" class="mt-5">
+                            <p class="text-sm font-semibold text-gray-700 mb-3">Fees</p>
+                            <div id="feeInputsWrapper" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <!-- Fee inputs will be populated here dynamically -->
                             </div>
                         </div>
                     </div>

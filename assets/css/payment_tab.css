@@ -309,7 +309,7 @@
 
 /* 8. TABLE STYLING - Clean and organized */
 .payments-table {
-    width: 100%;
+    width: 100% !important;
     border-collapse: collapse;
 }
 
@@ -335,6 +335,19 @@
 
 .payments-table tbody td {
     padding: 1.25rem 1.5rem;
+}
+
+/* Ensure DataTables doesn't override width */
+#paymentHistoryTable {
+    width: 100% !important;
+}
+
+#paymentHistoryTable_wrapper {
+    width: 100% !important;
+}
+
+.payment-table-wrapper table {
+    width: 100% !important;
 }
 
 /* 9. FILTER BAR - Modern and organized */

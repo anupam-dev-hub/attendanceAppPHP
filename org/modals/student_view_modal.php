@@ -91,6 +91,42 @@
                                         <p class="text-sm font-medium text-gray-900" id="viewRoll">-</p>
                                     </div>
                                     <div class="overview-info-item">
+                                        <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Sex</p>
+                                        <p class="text-sm font-medium text-gray-900" id="viewSex">-</p>
+                                    </div>
+                                    <div class="overview-info-item">
+                                        <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Date of Birth</p>
+                                        <p class="text-sm font-medium text-gray-900" id="viewDOB">-</p>
+                                    </div>
+                                    <div class="overview-info-item">
+                                        <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Place of Birth</p>
+                                        <p class="text-sm font-medium text-gray-900" id="viewPlaceOfBirth">-</p>
+                                    </div>
+                                    <div class="overview-info-item">
+                                        <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Nationality</p>
+                                        <p class="text-sm font-medium text-gray-900" id="viewNationality">-</p>
+                                    </div>
+                                    <div class="overview-info-item">
+                                        <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Mother Tongue</p>
+                                        <p class="text-sm font-medium text-gray-900" id="viewMotherTongue">-</p>
+                                    </div>
+                                    <div class="overview-info-item">
+                                        <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Religion</p>
+                                        <p class="text-sm font-medium text-gray-900" id="viewReligion">-</p>
+                                    </div>
+                                    <div class="overview-info-item">
+                                        <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Community</p>
+                                        <p class="text-sm font-medium text-gray-900" id="viewCommunity">-</p>
+                                    </div>
+                                    <div class="overview-info-item">
+                                        <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Native District</p>
+                                        <p class="text-sm font-medium text-gray-900" id="viewNativeDistrict">-</p>
+                                    </div>
+                                    <div class="overview-info-item">
+                                        <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Pin Code</p>
+                                        <p class="text-sm font-medium text-gray-900" id="viewPinCode">-</p>
+                                    </div>
+                                    <div class="overview-info-item">
                                         <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Phone</p>
                                         <p class="text-sm font-medium text-gray-900" id="viewPhone">-</p>
                                     </div>
@@ -101,6 +137,58 @@
                                     <div class="overview-info-item sm:col-span-2">
                                         <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Address</p>
                                         <p class="text-sm font-medium text-gray-900" id="viewAddress">-</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Parent/Guardian Information Card -->
+                            <div class="overview-card lg:col-span-3">
+                                <div class="overview-card-header">
+                                    <svg class="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                                    </svg>
+                                    <h4>Parent/Guardian Information</h4>
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div class="overview-info-item">
+                                        <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Name of Parent/Guardian</p>
+                                        <p class="text-sm font-medium text-gray-900" id="viewParentName">-</p>
+                                    </div>
+                                    <div class="overview-info-item">
+                                        <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Parent Contact</p>
+                                        <p class="text-sm font-medium text-gray-900" id="viewParentContact">-</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Previous Examination Details Card -->
+                            <div class="overview-card lg:col-span-3">
+                                <div class="overview-card-header">
+                                    <svg class="w-5 h-5 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    <h4>Previous Examination Details</h4>
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                    <div class="overview-info-item sm:col-span-2 lg:col-span-4">
+                                        <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Examination Name</p>
+                                        <p class="text-sm font-medium text-gray-900" id="viewExamName">-</p>
+                                    </div>
+                                    <div class="overview-info-item">
+                                        <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Total Marks</p>
+                                        <p class="text-sm font-medium text-gray-900" id="viewExamTotalMarks">-</p>
+                                    </div>
+                                    <div class="overview-info-item">
+                                        <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Marks Obtained</p>
+                                        <p class="text-sm font-medium text-gray-900" id="viewExamMarksObtained">-</p>
+                                    </div>
+                                    <div class="overview-info-item">
+                                        <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Percentage (%)</p>
+                                        <p class="text-sm font-medium text-gray-900" id="viewExamPercentage">-</p>
+                                    </div>
+                                    <div class="overview-info-item">
+                                        <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Grade</p>
+                                        <p class="text-sm font-medium text-gray-900" id="viewExamGrade">-</p>
                                     </div>
                                 </div>
                             </div>
@@ -146,9 +234,8 @@
                                         <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Admission Amount</p>
                                         <p class="text-sm font-medium text-gray-900" id="viewAdmission">-</p>
                                     </div>
-                                    <div class="overview-info-item">
-                                        <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Monthly/Course Fee</p>
-                                        <p class="text-sm font-medium text-gray-900" id="viewFee">-</p>
+                                    <div id="feesDisplay" class="overview-info-item">
+                                        <!-- Fees will be populated here -->
                                     </div>
                                 </div>
                             </div>

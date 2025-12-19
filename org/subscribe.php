@@ -85,23 +85,7 @@ if (isset($_GET['success'])) {
     </script>
 </head>
 <body class="bg-gray-50 font-sans antialiased">
-    <nav class="bg-teal-600 shadow-lg">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex items-center">
-                    <a href="dashboard.php" class="text-white text-xl font-bold tracking-wide"><?php echo htmlspecialchars($_SESSION['org_name']); ?></a>
-                </div>
-                <div class="flex items-center space-x-6">
-                    <a href="dashboard.php" class="text-white hover:text-teal-100 font-medium transition">Dashboard</a>
-                    <?php if (isSubscribed($org_id)): ?>
-                        <a href="students.php" class="text-white hover:text-teal-100 font-medium transition">Students</a>
-                        <a href="employees.php" class="text-white hover:text-teal-100 font-medium transition">Employees</a>
-                    <?php endif; ?>
-                    <a href="../logout.php" class="text-white hover:text-red-200 font-medium transition">Logout</a>
-                </div>
-            </div>
-        </div>
-    </nav>
+    <?php include 'navbar.php'; ?>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div class="mb-8">

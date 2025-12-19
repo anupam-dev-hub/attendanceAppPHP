@@ -3,6 +3,7 @@
 session_start();
 require '../config.php';
 require '../functions.php';
+require 'monthly_fee_functions.php';
 
 header('Content-Type: application/json');
 
@@ -33,15 +34,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
     
+    $student = $result->fetch_assoc();
+    // Legacy single-fee column was removed; initialization now handled elsewhere
+    $fee_amount = 0;
+    
     // Update status
     $updateStmt = $conn->prepare("UPDATE students SET is_active = ? WHERE id = ? AND org_id = ?");
     $updateStmt->bind_param("iii", $new_status, $student_id, $org_id);
     
     if ($updateStmt->execute()) {
         $status_text = $new_status ? 'activated' : 'deactivated';
+        $message = "Student $status_text successfully";
+        
         echo json_encode([
             'success' => true, 
-            'message' => "Student $status_text successfully",
+            'message' => $message,
             'is_active' => $new_status
         ]);
     } else {
