@@ -6,7 +6,7 @@ $error = '';
 $conflict_student = null;
 
 // Handle Add/Update Student (POST)
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['cancel_conflict'])) {
     $name = $_POST['name'];
     $class = $_POST['class'];
     $batch = $_POST['batch'];
@@ -89,11 +89,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // Check for duplicate roll number in same class & batch (for both add and edit)
-    if ($roll_number && !$force_add) {
-        // Check for duplicate roll number in same class AND same batch
+    // Get stream value
+    $stream = isset($_POST['stream']) && trim($_POST['stream']) !== '' ? trim($_POST['stream']) : null;
+
+    // Check for duplicate roll number in same class, stream & batch (for both add and edit)
+    // Skip conflict check if bypass_once flag is set (user already saw conflict and chose to proceed)
+    if ($roll_number && !$force_add && !isset($_POST['bypass_once'])) {
+        // Check for duplicate roll number in same class, stream AND batch
         // Exclude current student if editing
+        // Stream can be NULL, so we need to handle that properly
         $sql = "SELECT * FROM students WHERE org_id = ? AND class = ? AND batch = ? AND roll_number = ? AND roll_number IS NOT NULL AND roll_number != ''";
+        
+        // Add stream condition - handle NULL case
+        if ($stream !== null) {
+            $sql .= " AND stream = ?";
+        } else {
+            $sql .= " AND stream IS NULL";
+        }
+        
         if ($student_id) {
             $sql .= " AND id != ?";
         }
@@ -102,10 +115,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if ($student_id) {
             // Edit mode: exclude current student from conflict check
-            $checkStmt->bind_param("isssi", $org_id, $class, $batch, $roll_number, $student_id);
+            if ($stream !== null) {
+                $checkStmt->bind_param('issssi', $org_id, $class, $batch, $roll_number, $stream, $student_id);
+            } else {
+                $checkStmt->bind_param('isssi', $org_id, $class, $batch, $roll_number, $student_id);
+            }
         } else {
             // Add mode: check for any existing conflict
-            $checkStmt->bind_param("isss", $org_id, $class, $batch, $roll_number);
+            if ($stream !== null) {
+                $checkStmt->bind_param('issss', $org_id, $class, $batch, $roll_number, $stream);
+            } else {
+                $checkStmt->bind_param('isss', $org_id, $class, $batch, $roll_number);
+            }
         }
 
         $checkStmt->execute();
@@ -130,11 +151,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // Update existing student
             if ($photo_path) {
-                $stmt = $conn->prepare("UPDATE students SET name=?, class=?, batch=?, roll_number=?, address=?, phone=?, email=?, photo=?, sex=?, sex_other=?, date_of_birth=?, place_of_birth=?, nationality=?, mother_tongue=?, religion=?, religion_other=?, community=?, community_other=?, native_district=?, pin_code=?, parent_guardian_name=?, parent_contact=?, exam_name=?, exam_total_marks=?, exam_marks_obtained=?, exam_percentage=?, exam_grade=?, admission_amount=?, fees_json=?, is_active=?, remark=? WHERE id=? AND org_id=?");
-                $stmt->bind_param("ssssssssssssssssssssssiidddsisii", $name, $class, $batch, $roll_number, $address, $phone, $email, $photo_path, $sex, $sex_other, $date_of_birth, $place_of_birth, $nationality, $mother_tongue, $religion, $religion_other, $community, $community_other, $native_district, $pin_code, $parent_guardian_name, $parent_contact, $exam_name, $exam_total_marks, $exam_marks_obtained, $exam_percentage, $exam_grade, $admission_amount, $fees_json, $is_active, $remark, $student_id, $org_id);
+                $stmt = $conn->prepare("UPDATE students SET name=?, class=?, stream=?, batch=?, roll_number=?, address=?, phone=?, email=?, photo=?, sex=?, sex_other=?, date_of_birth=?, place_of_birth=?, nationality=?, mother_tongue=?, religion=?, religion_other=?, community=?, community_other=?, native_district=?, pin_code=?, parent_guardian_name=?, parent_contact=?, exam_name=?, exam_total_marks=?, exam_marks_obtained=?, exam_percentage=?, exam_grade=?, admission_amount=?, fees_json=?, is_active=?, remark=? WHERE id=? AND org_id=?");
+                $stmt->bind_param("sssssssssssssssssssssssssiddsdisiii", $name, $class, $stream, $batch, $roll_number, $address, $phone, $email, $photo_path, $sex, $sex_other, $date_of_birth, $place_of_birth, $nationality, $mother_tongue, $religion, $religion_other, $community, $community_other, $native_district, $pin_code, $parent_guardian_name, $parent_contact, $exam_name, $exam_total_marks, $exam_marks_obtained, $exam_percentage, $exam_grade, $admission_amount, $fees_json, $is_active, $remark, $student_id, $org_id);
             } else {
-                $stmt = $conn->prepare("UPDATE students SET name=?, class=?, batch=?, roll_number=?, address=?, phone=?, email=?, sex=?, sex_other=?, date_of_birth=?, place_of_birth=?, nationality=?, mother_tongue=?, religion=?, religion_other=?, community=?, community_other=?, native_district=?, pin_code=?, parent_guardian_name=?, parent_contact=?, exam_name=?, exam_total_marks=?, exam_marks_obtained=?, exam_percentage=?, exam_grade=?, admission_amount=?, fees_json=?, is_active=?, remark=? WHERE id=? AND org_id=?");
-                $stmt->bind_param("sssssssssssssssssssssiiidddsisii", $name, $class, $batch, $roll_number, $address, $phone, $email, $sex, $sex_other, $date_of_birth, $place_of_birth, $nationality, $mother_tongue, $religion, $religion_other, $community, $community_other, $native_district, $pin_code, $parent_guardian_name, $parent_contact, $exam_name, $exam_total_marks, $exam_marks_obtained, $exam_percentage, $exam_grade, $admission_amount, $fees_json, $is_active, $remark, $student_id, $org_id);
+                $stmt = $conn->prepare("UPDATE students SET name=?, class=?, stream=?, batch=?, roll_number=?, address=?, phone=?, email=?, sex=?, sex_other=?, date_of_birth=?, place_of_birth=?, nationality=?, mother_tongue=?, religion=?, religion_other=?, community=?, community_other=?, native_district=?, pin_code=?, parent_guardian_name=?, parent_contact=?, exam_name=?, exam_total_marks=?, exam_marks_obtained=?, exam_percentage=?, exam_grade=?, admission_amount=?, fees_json=?, is_active=?, remark=? WHERE id=? AND org_id=?");
+                $stmt->bind_param("sssssssssssssssssssssssiddsdisiii", $name, $class, $stream, $batch, $roll_number, $address, $phone, $email, $sex, $sex_other, $date_of_birth, $place_of_birth, $nationality, $mother_tongue, $religion, $religion_other, $community, $community_other, $native_district, $pin_code, $parent_guardian_name, $parent_contact, $exam_name, $exam_total_marks, $exam_marks_obtained, $exam_percentage, $exam_grade, $admission_amount, $fees_json, $is_active, $remark, $student_id, $org_id);
             }
 
             if ($stmt->execute()) {
@@ -156,26 +177,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 // Update payment if admission amount changed
                 if (abs($admission_amount - $old_amount) > 0.01) {
-                    // Check if admission payment exists
-                    $payCheck = $conn->prepare("SELECT id FROM student_payments WHERE student_id = ? AND category = 'Admission'");
-                    $payCheck->bind_param("i", $student_id);
-                    $payCheck->execute();
-                    $payRes = $payCheck->get_result();
+                    // Verify student exists before creating payment
+                    $verifyStmt = $conn->prepare("SELECT id FROM students WHERE id = ? AND org_id = ?");
+                    $verifyStmt->bind_param("ii", $student_id, $org_id);
+                    $verifyStmt->execute();
+                    $verifyRes = $verifyStmt->get_result();
+                    
+                    if ($verifyRes->num_rows > 0) {
+                        // Check if admission payment exists
+                        $payCheck = $conn->prepare("SELECT id FROM student_payments WHERE student_id = ? AND category = 'Admission'");
+                        $payCheck->bind_param("i", $student_id);
+                        $payCheck->execute();
+                        $payRes = $payCheck->get_result();
 
-                    $admission_due = -abs($admission_amount);
+                        $admission_due = -abs($admission_amount);
 
-                    if ($payRes->num_rows > 0) {
-                        // Update existing payment to reflect negative due
-                        $payRow = $payRes->fetch_assoc();
-                        $payUpdate = $conn->prepare("UPDATE student_payments SET amount = ? WHERE id = ?");
-                        $payUpdate->bind_param("di", $admission_due, $payRow['id']);
-                        $payUpdate->execute();
-                    } else {
-                        // Create new payment if not exists (and amount > 0)
-                        if ($admission_amount > 0) {
-                            $payInsert = $conn->prepare("INSERT INTO student_payments (student_id, amount, transaction_type, category, description) VALUES (?, ?, 'credit', 'Admission', 'Admission Fee')");
-                            $payInsert->bind_param("id", $student_id, $admission_due);
-                            $payInsert->execute();
+                        if ($payRes->num_rows > 0) {
+                            // Update existing payment to reflect negative due
+                            $payRow = $payRes->fetch_assoc();
+                            $payUpdate = $conn->prepare("UPDATE student_payments SET amount = ? WHERE id = ?");
+                            $payUpdate->bind_param("di", $admission_due, $payRow['id']);
+                            $payUpdate->execute();
+                        } else {
+                            // Create new payment if not exists (and amount > 0)
+                            if ($admission_amount > 0) {
+                                $payInsert = $conn->prepare("INSERT INTO student_payments (student_id, amount, transaction_type, category, description) VALUES (?, ?, 'credit', 'Admission', 'Admission Fee')");
+                                $payInsert->bind_param("id", $student_id, $admission_due);
+                                $payInsert->execute();
+                            }
                         }
                     }
                 }
@@ -190,8 +219,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         } else {
             // Add new student
-            $stmt = $conn->prepare("INSERT INTO students (org_id, name, class, batch, roll_number, address, phone, email, photo, sex, sex_other, date_of_birth, place_of_birth, nationality, mother_tongue, religion, religion_other, community, community_other, native_district, pin_code, parent_guardian_name, parent_contact, exam_name, exam_total_marks, exam_marks_obtained, exam_percentage, exam_grade, admission_amount, fees_json, is_active, remark) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param("isssssssssssssssssssssssiddsdsis", $org_id, $name, $class, $batch, $roll_number, $address, $phone, $email, $photo_path, $sex, $sex_other, $date_of_birth, $place_of_birth, $nationality, $mother_tongue, $religion, $religion_other, $community, $community_other, $native_district, $pin_code, $parent_guardian_name, $parent_contact, $exam_name, $exam_total_marks, $exam_marks_obtained, $exam_percentage, $exam_grade, $admission_amount, $fees_json, $is_active, $remark);
+            $stmt = $conn->prepare("INSERT INTO students (org_id, name, class, stream, batch, roll_number, address, phone, email, photo, sex, sex_other, date_of_birth, place_of_birth, nationality, mother_tongue, religion, religion_other, community, community_other, native_district, pin_code, parent_guardian_name, parent_contact, exam_name, exam_total_marks, exam_marks_obtained, exam_percentage, exam_grade, admission_amount, fees_json, is_active, remark) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+            $stmt->bind_param("issssssssssssssssssssssssiddsdsis", $org_id, $name, $class, $stream, $batch, $roll_number, $address, $phone, $email, $photo_path, $sex, $sex_other, $date_of_birth, $place_of_birth, $nationality, $mother_tongue, $religion, $religion_other, $community, $community_other, $native_district, $pin_code, $parent_guardian_name, $parent_contact, $exam_name, $exam_total_marks, $exam_marks_obtained, $exam_percentage, $exam_grade, $admission_amount, $fees_json, $is_active, $remark);
 
             if ($stmt->execute()) {
                 $new_student_id = $stmt->insert_id;
@@ -224,7 +253,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 header("Location: students.php");
                 exit();
             } else {
-                $_SESSION['error'] = "Error adding student: " . $stmt->error;
+                $_SESSION['error'] = "Error adding student: " . $stmt->error . " | SQL: " . $stmt->sqlstate;
                 header("Location: students.php");
                 exit();
             }

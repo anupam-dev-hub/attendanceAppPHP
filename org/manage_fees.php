@@ -102,8 +102,10 @@ while ($row = $feesResult->fetch_assoc()) {
                                     </td>
                                     <td class="px-6 py-4 text-sm space-x-2">
                                         <?php if (!$fee['is_default']): ?>
+                                            <button onclick="editFee(<?php echo $fee['id']; ?>, '<?php echo htmlspecialchars($fee['fee_name'], ENT_QUOTES); ?>')" class="text-blue-600 hover:text-blue-900 font-medium mr-2">Edit</button>
                                             <button onclick="deleteFee(<?php echo $fee['id']; ?>)" class="text-red-600 hover:text-red-900 font-medium">Delete</button>
                                         <?php else: ?>
+                                            <button onclick="editFee(<?php echo $fee['id']; ?>, '<?php echo htmlspecialchars($fee['fee_name'], ENT_QUOTES); ?>')" class="text-blue-600 hover:text-blue-900 font-medium mr-2">Edit</button>
                                             <span class="text-gray-400 text-sm">Cannot delete default fee</span>
                                         <?php endif; ?>
                                     </td>
@@ -117,6 +119,26 @@ while ($row = $feesResult->fetch_assoc()) {
                     <p class="text-gray-500">No fees configured yet. Create your first fee type above.</p>
                 </div>
             <?php endif; ?>
+        </div>
+    </div>
+
+    <!-- Edit Fee Modal (global, single instance) -->
+    <div id="editFeeModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-xl font-semibold text-gray-900">Edit Fee</h3>
+            </div>
+            <form id="editFeeForm" class="px-6 py-4">
+                <input type="hidden" id="editFeeId">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Fee Name</label>
+                    <input type="text" id="editFeeName" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent">
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="closeEditModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700">Update Fee</button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -146,7 +168,15 @@ while ($row = $feesResult->fetch_assoc()) {
                 const data = await response.json();
                 
                 if (data.success) {
-                    Swal.fire('Success', 'Fee added successfully!', 'success').then(() => {
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: 'Fee added successfully!',
+                        showConfirmButton: false,
+                        timer: 3000,
+                        timerProgressBar: true
+                    }).then(() => {
                         location.reload();
                     });
                 } else {
@@ -159,6 +189,79 @@ while ($row = $feesResult->fetch_assoc()) {
             }
         });
         
+        // Edit fee (global)
+        // Decode HTML entities safely
+        function decodeHtmlEntities(str) {
+            const txt = document.createElement('textarea');
+            txt.innerHTML = str;
+            return txt.value;
+        }
+
+        function editFee(feeId, feeName) {
+            document.getElementById('editFeeId').value = feeId;
+            document.getElementById('editFeeName').value = decodeHtmlEntities(feeName);
+            const modal = document.getElementById('editFeeModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => document.getElementById('editFeeName').focus(), 100);
+        }
+
+        // Close edit modal (global)
+        function closeEditModal() {
+            const modal = document.getElementById('editFeeModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            document.getElementById('editFeeForm').reset();
+        }
+
+        // Update fee submit handler (global)
+        document.getElementById('editFeeForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const feeId = document.getElementById('editFeeId').value;
+            const feeName = document.getElementById('editFeeName').value.trim();
+
+            if (!feeName) {
+                Swal.fire('Error', 'Fee name is required', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('api/manage_fees.php?action=update_fee', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        fee_id: feeId,
+                        fee_name: feeName
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    closeEditModal();
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: 'Fee updated successfully!',
+                        showConfirmButton: false,
+                        timer: 3000,
+                        timerProgressBar: true
+                    }).then(() => {
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire('Error', data.message || 'Failed to update fee', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                Swal.fire('Error', 'An error occurred while updating fee', 'error');
+            }
+        });
+
         // Delete fee
         async function deleteFee(feeId) {
             const result = await Swal.fire({

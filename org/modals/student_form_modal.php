@@ -192,6 +192,10 @@
                                 <input type="text" name="class" id="studentClass" required>
                             </div>
                             <div class="form-field-group">
+                                <label>Stream</label>
+                                <input type="text" name="stream" id="studentStream" placeholder="e.g., Science, Commerce, Arts">
+                            </div>
+                            <div class="form-field-group">
                                 <label>Batch</label>
                                 <select name="batch" id="studentBatch" required>
                                     <?php

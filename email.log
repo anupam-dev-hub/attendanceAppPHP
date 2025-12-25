@@ -28,3 +28,13 @@ Password: fc16ea15
 
 Login here: http://localhost/attendanceAppPHP/org/index.php
 --------------------------------------------------
+[2025-12-25 11:11:27] To: test@test.com | Subject: Welcome to Attendance App - Your Credentials | Message: Hello Jason Velazquez,
+
+Your organization has been registered.
+
+Login Details:
+Email: test@test.com
+Password: de69ac11
+
+Login here: http://localhost/attendanceAppPHP/org/index.php
+--------------------------------------------------

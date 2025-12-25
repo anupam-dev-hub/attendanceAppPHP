@@ -234,6 +234,10 @@
                                         <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Admission Amount</p>
                                         <p class="text-sm font-medium text-gray-900" id="viewAdmission">-</p>
                                     </div>
+                                    <div class="overview-info-item">
+                                        <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Advance Payment Balance</p>
+                                        <p class="text-sm font-medium text-purple-600" id="viewAdvancePayment">₹0.00</p>
+                                    </div>
                                     <div id="feesDisplay" class="overview-info-item">
                                         <!-- Fees will be populated here -->
                                     </div>

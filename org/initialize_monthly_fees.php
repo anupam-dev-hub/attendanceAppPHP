@@ -88,10 +88,13 @@ $students_result = $stmt->get_result();
         <script>
         <?php if ($success_message): ?>
             Swal.fire({
-                icon: 'success',
-                title: 'Success!',
-                text: '<?php echo addslashes($success_message); ?>',
-                confirmButtonColor: '#0d9488'
+            toast: true,
+            position: 'top-end',
+            icon: 'success',
+            title: '<?php echo addslashes($success_message); ?>',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true
             });
         <?php endif; ?>
         

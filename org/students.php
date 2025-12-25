@@ -27,12 +27,15 @@ if (isset($_SESSION['error'])) {
     unset($_SESSION['error']);
 }
 
-// Fetch Students with Net Balance
+// Fetch Students with Net Balance and Advance Payment
+// Balance calculation: credits (fees/charges) are negative, debits (payments) are positive
+// Net balance = Total Debits - Total Credits
+// Positive balance = overpaid, Negative balance = money owed
 $result = $conn->query("
     SELECT s.*, 
            COALESCE(SUM(CASE 
-               WHEN sp.transaction_type = 'debit' THEN sp.amount 
-               WHEN sp.transaction_type = 'credit' THEN -sp.amount 
+               WHEN sp.transaction_type = 'debit' THEN ABS(sp.amount)
+               WHEN sp.transaction_type = 'credit' THEN -ABS(sp.amount)
                ELSE 0 
            END), 0) AS net_balance
     FROM students s
@@ -284,6 +287,7 @@ $result = $conn->query("
                                         <th scope="col" class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Batch</th>
                                         <th scope="col" class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Roll No</th>
                                         <th scope="col" class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Balance</th>
+                                        <th scope="col" class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Advance</th>
                                         <th scope="col" class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
                                         <th scope="col" class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                         <th scope="col" class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">QR Code</th>
@@ -325,6 +329,12 @@ $result = $conn->query("
                                                 <?php elseif ($balance > 0): ?>
                                                     <span class="text-xs">(Paid)</span>
                                                 <?php endif; ?>
+                                            </td>
+                                            <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-medium <?php 
+                                                $advance = (float)($row['advance_payment'] ?? 0);
+                                                echo $advance > 0 ? 'text-purple-600' : 'text-gray-500';
+                                            ?>">
+                                                ₹<?php echo number_format($advance, 2); ?>
                                             </td>
                                             <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500"><?php echo htmlspecialchars($row['phone']); ?></td>
                                             <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -372,15 +382,43 @@ $result = $conn->query("
     <!-- Include JavaScript -->
     <script src="js/students.js?v=<?php echo time(); ?>"></script>
     <script>
-        // Re-open modal if there was an error (and it wasn't a conflict)
-        <?php if ($error && !$conflict_student): ?>
-            // We would ideally repopulate the form here with POST data, 
-            // but for simplicity we'll just open it. 
-            // A better approach would be to echo the POST data into JS variables.
+        <?php 
+        // Handle GET parameter for reopening form after conflict cancel
+        if (isset($_GET['reopen_form']) && isset($_GET['form_data'])):
+            $formData = json_decode(urldecode($_GET['form_data']), true);
+            if ($formData):
+        ?>
             openAddModal();
-            // If it was an edit, we might lose the ID unless we persist it.
-            // For now, user re-enters.
-        <?php endif; ?>
+            setTimeout(function() {
+                const formData = <?php echo json_encode($formData); ?>;
+                const form = document.querySelector('#studentForm');
+                
+                // Add bypass_once hidden field
+                let bypassField = document.createElement('input');
+                bypassField.type = 'hidden';
+                bypassField.name = 'bypass_once';
+                bypassField.value = '1';
+                form.appendChild(bypassField);
+                
+                for (const [key, value] of Object.entries(formData)) {
+                    if (key !== 'cancel_conflict' && key !== 'force_add' && key !== 'bypass_once') {
+                        let field = form.querySelector('[name="' + key + '"]');
+                        if (!field) {
+                            field = document.createElement('input');
+                            field.type = 'hidden';
+                            field.name = key;
+                            form.appendChild(field);
+                        }
+                        field.value = value;
+                        const event = new Event('change', { bubbles: true });
+                        field.dispatchEvent(event);
+                    }
+                }
+            }, 100);
+        <?php 
+            endif;
+        endif;
+        ?>
     </script>
 </body>
 

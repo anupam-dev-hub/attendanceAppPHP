@@ -20,6 +20,8 @@ DROP TABLE IF EXISTS employees;
 DROP TABLE IF EXISTS org_documents;
 DROP TABLE IF EXISTS org_fees;
 DROP TABLE IF EXISTS subscriptions;
+DROP TABLE IF EXISTS advance_payment_adjustments;
+DROP TABLE IF EXISTS advance_payments;
 DROP TABLE IF EXISTS student_payments;
 DROP TABLE IF EXISTS students;
 DROP TABLE IF EXISTS organizations;
@@ -91,6 +93,7 @@ CREATE TABLE IF NOT EXISTS students (
     org_id INT NOT NULL,
     name VARCHAR(100) NOT NULL,
     class VARCHAR(50) DEFAULT NULL,
+    stream VARCHAR(50) DEFAULT NULL,
     batch VARCHAR(50) DEFAULT '2025-2026',
     roll_number VARCHAR(50) DEFAULT NULL,
     address TEXT,
@@ -117,6 +120,7 @@ CREATE TABLE IF NOT EXISTS students (
     exam_percentage DECIMAL(5,2) DEFAULT NULL,
     exam_grade VARCHAR(10) DEFAULT NULL,
     admission_amount DECIMAL(10, 2) DEFAULT 0.00,
+    advance_payment DECIMAL(10, 2) DEFAULT 0.00,
     fees_json JSON DEFAULT NULL COMMENT 'Stores fees as JSON array',
     is_active BOOLEAN DEFAULT 1,
     remark TEXT,
@@ -206,6 +210,33 @@ CREATE TABLE IF NOT EXISTS student_payments (
     FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
 );
 
+-- Advance Payments Table
+CREATE TABLE IF NOT EXISTS advance_payments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id INT NOT NULL,
+    amount DECIMAL(10, 2) NOT NULL,
+    payment_date DATE NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
+    INDEX idx_student_id (student_id),
+    INDEX idx_payment_date (payment_date)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Advance Payment Adjustments Table
+CREATE TABLE IF NOT EXISTS advance_payment_adjustments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    student_id INT NOT NULL,
+    advance_payment_id INT NOT NULL,
+    student_payment_id INT NOT NULL,
+    deduction_amount DECIMAL(10, 2) NOT NULL,
+    adjustment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
+    FOREIGN KEY (advance_payment_id) REFERENCES advance_payments(id) ON DELETE CASCADE,
+    FOREIGN KEY (student_payment_id) REFERENCES student_payments(id) ON DELETE CASCADE,
+    INDEX idx_student_id (student_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Settings
 CREATE TABLE IF NOT EXISTS settings (
     setting_key VARCHAR(50) PRIMARY KEY,
@@ -229,10 +260,12 @@ if ($conn->multi_query($sql)) {
 // Schema Updates for existing tables
 $schema_updates = [
     "ALTER TABLE students ADD COLUMN IF NOT EXISTS class VARCHAR(50) DEFAULT NULL",
+    "ALTER TABLE students ADD COLUMN IF NOT EXISTS stream VARCHAR(50) DEFAULT NULL",
     "ALTER TABLE students ADD COLUMN IF NOT EXISTS batch VARCHAR(50) DEFAULT '2025-2026'",
     "ALTER TABLE students ADD COLUMN IF NOT EXISTS roll_number VARCHAR(50) DEFAULT NULL",
     "ALTER TABLE students ADD COLUMN IF NOT EXISTS photo VARCHAR(255) DEFAULT NULL",
     "ALTER TABLE students ADD COLUMN IF NOT EXISTS admission_amount DECIMAL(10, 2) DEFAULT 0.00",
+    "ALTER TABLE students ADD COLUMN IF NOT EXISTS advance_payment DECIMAL(10, 2) DEFAULT 0.00",
     "ALTER TABLE students ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT 1",
     "ALTER TABLE students ADD COLUMN IF NOT EXISTS remark TEXT",
     "ALTER TABLE students ADD COLUMN IF NOT EXISTS fee DECIMAL(10, 2) DEFAULT 0.00"

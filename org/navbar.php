@@ -83,13 +83,14 @@ $is_subscribed = isSubscribed($org_id);
                     <a href="students.php" class="text-white hover:text-teal-100 font-medium transition <?php echo $current_page === 'students.php' ? 'text-teal-100' : ''; ?>">Students</a>
                     <a href="employees.php" class="text-white hover:text-teal-100 font-medium transition <?php echo $current_page === 'employees.php' ? 'text-teal-100' : ''; ?>">Employees</a>
                     <div class="dropdown">
-                        <span class="dropdown-btn text-white hover:text-teal-100 font-medium transition <?php echo in_array($current_page, ['finance_overview.php', 'initialize_monthly_fees.php', 'manage_fees.php']) ? 'text-teal-100' : ''; ?>">
+                        <span class="dropdown-btn text-white hover:text-teal-100 font-medium transition <?php echo in_array($current_page, ['finance_overview.php', 'initialize_monthly_fees.php', 'manage_fees.php', 'custom_fees.php']) ? 'text-teal-100' : ''; ?>">
                             Finance ▾
                         </span>
                         <div class="dropdown-content">
                             <a href="finance_overview.php" <?php echo $current_page === 'finance_overview.php' ? 'class="active"' : ''; ?>>Finance Overview</a>
                             <a href="manage_fees.php" <?php echo $current_page === 'manage_fees.php' ? 'class="active"' : ''; ?>>Manage Fees</a>
                             <a href="initialize_monthly_fees.php" <?php echo $current_page === 'initialize_monthly_fees.php' ? 'class="active"' : ''; ?>>Monthly Fees</a>
+                            <a href="custom_fees.php" <?php echo $current_page === 'custom_fees.php' ? 'class="active"' : ''; ?>>Custom Fees</a>
                         </div>
                     </div>
                 <?php endif; ?>
@@ -117,13 +118,14 @@ $is_subscribed = isSubscribed($org_id);
                     <a href="students.php" class="block text-white hover:bg-teal-700 px-3 py-2 rounded-md font-medium transition <?php echo $current_page === 'students.php' ? 'bg-teal-700' : ''; ?>">Students</a>
                     <a href="employees.php" class="block text-white hover:bg-teal-700 px-3 py-2 rounded-md font-medium transition <?php echo $current_page === 'employees.php' ? 'bg-teal-700' : ''; ?>">Employees</a>
                     <div class="dropdown">
-                        <span id="mobileFinanceBtn" class="block text-white px-3 py-2 rounded-md font-medium cursor-pointer <?php echo in_array($current_page, ['finance_overview.php', 'initialize_monthly_fees.php', 'manage_fees.php']) ? 'bg-teal-700' : ''; ?>">
+                        <span id="mobileFinanceBtn" class="block text-white px-3 py-2 rounded-md font-medium cursor-pointer <?php echo in_array($current_page, ['finance_overview.php', 'initialize_monthly_fees.php', 'manage_fees.php', 'custom_fees.php']) ? 'bg-teal-700' : ''; ?>">
                             Finance ▾
                         </span>
                         <div id="mobileFinanceDropdown" class="dropdown-content">
                             <a href="finance_overview.php" <?php echo $current_page === 'finance_overview.php' ? 'class="active"' : ''; ?>>Finance Overview</a>
                             <a href="manage_fees.php" <?php echo $current_page === 'manage_fees.php' ? 'class="active"' : ''; ?>>Manage Fees</a>
                             <a href="initialize_monthly_fees.php" <?php echo $current_page === 'initialize_monthly_fees.php' ? 'class="active"' : ''; ?>>Monthly Fees</a>
+                            <a href="custom_fees.php" <?php echo $current_page === 'custom_fees.php' ? 'class="active"' : ''; ?>>Custom Fees</a>
                         </div>
                     </div>
                 <?php endif; ?>

@@ -223,6 +223,7 @@ function openEditModal(student) {
     document.getElementById('studentId').value = student.id;
     document.getElementById('studentName').value = student.name;
     document.getElementById('studentClass').value = student.class || '';
+    document.getElementById('studentStream').value = student.stream || '';
     document.getElementById('studentBatch').value = student.batch || '2025-2026';
     document.getElementById('studentRoll').value = student.roll_number || '';
     document.getElementById('studentPhone').value = student.phone;
@@ -633,11 +634,13 @@ function deleteDocument(documentId, studentId, event) {
                 .then(data => {
                     if (data.success) {
                         Swal.fire({
-                            icon: 'success',
-                            title: 'Deleted!',
-                            text: 'Document has been deleted successfully',
-                            confirmButtonColor: '#0d9488',
-                            confirmButtonText: 'OK'
+                             position: "top-end",
+                             icon: 'success',
+                             toast: true,
+                            title: 'Document has been deleted successfully',
+                            showConfirmButton: false,
+                            timer: 5000,
+                            timerProgressBar: true
                         }).then(() => {
                             // Refresh the document list with correct element ID
                             fetch('get_student_documents.php?student_id=' + studentId)
@@ -925,6 +928,25 @@ function viewStudent(student) {
     }
     
     document.getElementById('viewStudentId').innerText = 'STU-' + student.id;
+
+    // Fetch and populate advance payment information
+    fetch('api/get_advance_payment.php?student_id=' + student.id)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const advanceBalance = data.advance_balance || 0;
+                document.getElementById('viewAdvancePayment').innerText = '₹' + Number(advanceBalance).toFixed(2);
+                if (advanceBalance > 0) {
+                    document.getElementById('viewAdvancePayment').classList.add('text-purple-600');
+                } else {
+                    document.getElementById('viewAdvancePayment').classList.add('text-gray-600');
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching advance payment:', error);
+            document.getElementById('viewAdvancePayment').innerText = '₹0.00';
+        });
 
 
 
@@ -1354,30 +1376,18 @@ function openPaymentModal(student) {
                 </div></div>`;
             }
             
-            Swal.fire({
-                title: 'Record Student Payment',
-                html: `
-                    <div class="text-left">
-                        <div class="mb-4">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Student Name</label>
-                            <input type="text" value="${student.name}" disabled class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-700">
-                        </div>
-                        
-                        <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
-                            <p class="text-sm text-gray-700"><strong>Current Balance:</strong> ₹${currentBalance.toFixed(2)}</p>
-                        </div>
-                        
-                        ${pendingPaymentsHtml}
-                        
-                        <div class="p-3 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-700">
-                            Use the pending payments list above to record payments. Manual entry is disabled for accuracy.
-                        </div>
-                    </div>
-                `,
-                showCancelButton: true,
-                cancelButtonText: 'Close',
-                showConfirmButton: false
-            });
+            // Fetch advance payment data separately (non-blocking)
+            fetch(`api/get_advance_payment.php?student_id=${student.id}`)
+                .then(r => r.json())
+                .then(advanceData => {
+                    const currentAdvance = advanceData.success ? parseFloat(advanceData.advance_balance || 0) : 0;
+                    showPaymentModal(student.name, currentBalance, currentAdvance, pendingPaymentsHtml, student.id);
+                })
+                .catch(err => {
+                    console.error('Error fetching advance payment:', err);
+                    // Show modal even if advance payment fails
+                    showPaymentModal(student.name, currentBalance, 0, pendingPaymentsHtml, student.id);
+                });
         })
         .catch(error => {
             console.error('Error:', error);
@@ -1385,80 +1395,294 @@ function openPaymentModal(student) {
         });
 }
 
-function quickPayPending(studentId, feeType, amount) {
-    // Auto-populate form with pending payment details
-    const student = { id: studentId };
+function showPaymentModal(studentName, currentBalance, currentAdvance, pendingPaymentsHtml, studentId) {
+    Swal.fire({
+        title: 'Student Payment Portal',
+        html: `
+            <div class="text-left">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Student Name</label>
+                    <input type="text" value="${studentName}" disabled class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-700">
+                </div>
+                
+                <div class="mb-4 grid grid-cols-2 gap-3">
+                    <div class="p-3 bg-blue-50 border border-blue-200 rounded-md">
+                        <p class="text-xs text-blue-600 font-semibold uppercase mb-1">Current Balance</p>
+                        <p class="text-lg font-bold text-blue-900">₹${currentBalance.toFixed(2)}</p>
+                    </div>
+                    <div class="p-3 ${currentAdvance > 0 ? 'bg-purple-50 border-purple-200' : 'bg-gray-50 border-gray-200'} border rounded-md">
+                        <p class="text-xs ${currentAdvance > 0 ? 'text-purple-600' : 'text-gray-600'} font-semibold uppercase mb-1">Advance Payment</p>
+                        <p class="text-lg font-bold ${currentAdvance > 0 ? 'text-purple-900' : 'text-gray-700'}">₹${currentAdvance.toFixed(2)}</p>
+                    </div>
+                </div>
+                
+                ${pendingPaymentsHtml}
+                
+                <div class="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-md text-sm text-gray-700">
+                    <p class="font-semibold mb-2">ℹ️ Payment Options:</p>
+                    <ul class="space-y-1 text-xs">
+                        <li>✓ Click on pending payments above to pay specific fees</li>
+                        <li>✓ Use "Record Advance Payment" button below to collect advance</li>
+                        <li>✓ Advance payments auto-deduct from future payments</li>
+                    </ul>
+                </div>
+                
+                <button class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg transition" onclick="recordAdvanceFromModal('${studentId}', '${studentName.replace(/'/g, "\\'")}')" style="cursor: pointer;">
+                    💰 Record Advance Payment
+                </button>
+            </div>
+        `,
+        showCancelButton: true,
+        cancelButtonText: 'Close',
+        showConfirmButton: false
+    });
+}
+
+// Record advance payment from payment modal
+function recordAdvanceFromModal(studentId, studentName) {
+    // Fetch current balance for the modal (non-blocking)
+    let currentAdvance = 0;
+    let historyHtml = '';
     
-    // Close current alert if any
-    Swal.close();
-    
-    // Fetch fresh data and reopen with pre-filled info
-    fetch(`get_student_details.php?student_id=${studentId}`)
-        .then(r => r.json())
+    fetch(`api/get_advance_payment.php?student_id=${studentId}`)
+        .then(response => response.json())
         .then(data => {
-            if (!data.success) {
-                Swal.fire('Error', 'Failed to load student details', 'error');
-                return;
+            if (data.success) {
+                currentAdvance = data.advance_balance || 0;
+                
+                // Build advance payment history
+                if (data.history && data.history.length > 0) {
+                    historyHtml = '<div class="mb-4"><p class="text-sm font-semibold text-gray-700 mb-2">Recent Advance Payments:</p>';
+                    historyHtml += '<div class="space-y-2 max-h-32 overflow-y-auto">';
+                    
+                    data.history.slice(0, 3).forEach(h => {
+                        const dateObj = new Date(h.payment_date);
+                        const dateStr = dateObj.toLocaleDateString('en-IN');
+                        historyHtml += `
+                            <div class="p-2 bg-gray-50 border border-gray-200 rounded text-xs">
+                                <div class="flex justify-between items-center">
+                                    <span class="font-medium">₹${parseFloat(h.amount).toFixed(2)}</span>
+                                    <span class="text-gray-500">${dateStr}</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    historyHtml += '</div></div>';
+                }
+            }
+            showAdvancePaymentModal(studentId, studentName, currentAdvance, historyHtml);
+        })
+        .catch(err => {
+            console.error('Error fetching advance payment:', err);
+            // Show modal even if advance payment fails
+            showAdvancePaymentModal(studentId, studentName, 0, '');
+        });
+}
+
+function showAdvancePaymentModal(studentId, studentName, currentAdvance, historyHtml) {
+    Swal.fire({
+        title: `Record Advance Payment - ${studentName}`,
+        html: `
+            <div class="text-left">
+                <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                    <p class="text-sm text-blue-800"><strong>Current Advance Balance:</strong> ₹${currentAdvance.toFixed(2)}</p>
+                </div>
+                
+                ${historyHtml}
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Advance Amount (₹)</label>
+                    <input type="number" id="advanceAmount" value="" min="0.01" step="0.01" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Enter advance amount">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Description (Optional)</label>
+                    <input type="text" id="advanceDescription" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="e.g., Advance for next month">
+                </div>
+            </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'Record Advance Payment',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#a855f7',
+        didOpen: () => {
+            setTimeout(() => {
+                document.getElementById('advanceAmount').focus();
+            }, 100);
+        },
+        preConfirm: () => {
+            const amount = parseFloat(document.getElementById('advanceAmount').value);
+            const description = document.getElementById('advanceDescription').value;
+            
+            if (!amount || amount <= 0) {
+                Swal.showValidationMessage('Please enter a valid amount');
+                return false;
             }
             
-            const currentBalance = parseFloat(data.student.balance || 0);
-            
-            Swal.fire({
-                title: 'Record Payment - ' + feeType,
-                html: `
-                    <div class="text-left">
-                        <div class="mb-4 p-3 bg-green-50 border border-green-300 rounded-md">
-                            <p class="text-sm text-green-800"><strong>Pending Amount:</strong> ₹${amount.toFixed(2)}</p>
-                        </div>
-                        <div class="mb-4">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Amount (₹)</label>
-                            <input type="number" id="paymentAmount" value="${amount.toFixed(2)}" min="0.01" step="0.01" class="w-full px-3 py-2 border border-gray-300 rounded-md">
-                        </div>
-                        <div class="mb-4">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                            <select id="paymentCategory" class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100" disabled>
-                                <option value="${feeType}" selected>${feeType}</option>
-                            </select>
+            return {
+                student_id: studentId,
+                amount: amount,
+                description: description || 'Advance Payment'
+            };
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            submitAdvancePayment(result.value);
+        }
+    });
+}
+
+async function quickPayPending(studentId, feeType, amount) {
+    // Close current alert if any
+    Swal.close();
+
+    try {
+        // Fetch student details (fail-fast)
+        const detailsResp = await fetch(`get_student_details.php?student_id=${studentId}`);
+        if (!detailsResp.ok) {
+            throw new Error(`Student details request failed (${detailsResp.status})`);
+        }
+        const balanceData = await detailsResp.json();
+        if (!balanceData.success) {
+            Swal.fire('Error', balanceData.message || 'Failed to load student details', 'error');
+            return;
+        }
+
+        // Fetch advance payment (tolerant to failure)
+        let advanceBalance = 0;
+        try {
+            const advResp = await fetch(`api/get_advance_payment.php?student_id=${studentId}`);
+            if (advResp.ok) {
+                const advData = await advResp.json();
+                if (advData.success) {
+                    advanceBalance = parseFloat(advData.advance_balance || 0);
+                }
+            }
+        } catch (err) {
+            console.error('Advance fetch failed:', err);
+        }
+
+        const currentBalance = parseFloat(balanceData.student.balance || 0);
+
+        // Calculate amount after advance deduction
+        const advanceDeduction = Math.min(advanceBalance, amount);
+        const amountAfterAdvance = Math.max(0, amount - advanceDeduction);
+
+        let advanceHtml = '';
+        if (advanceBalance > 0) {
+            advanceHtml = `
+                <div class="mb-4 p-3 bg-purple-50 border border-purple-300 rounded-md">
+                    <p class="text-sm text-purple-800 mb-2"><strong>💜 Advance Payment Available</strong></p>
+                    <div class="grid grid-cols-3 gap-2 text-sm">
+                        <div>
+                            <p class="text-xs text-purple-600 font-semibold">Advance Balance</p>
+                            <p class="font-bold text-purple-900">₹${advanceBalance.toFixed(2)}</p>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Description (Optional)</label>
-                            <textarea id="paymentDescription" class="w-full px-3 py-2 border border-gray-300 rounded-md" rows="2" placeholder="Enter description..."></textarea>
+                            <p class="text-xs text-purple-600 font-semibold">Will Deduct</p>
+                            <p class="font-bold text-green-600">₹${advanceDeduction.toFixed(2)}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-purple-600 font-semibold">Remaining Advance</p>
+                            <p class="font-bold text-purple-900">₹${(advanceBalance - advanceDeduction).toFixed(2)}</p>
                         </div>
                     </div>
-                `,
-                showCancelButton: true,
-                confirmButtonText: 'Record Payment',
-                cancelButtonText: 'Cancel',
-                confirmButtonColor: '#0d9488',
-                didOpen: () => {
-                    setTimeout(() => {
-                        document.getElementById('paymentAmount').focus();
-                    }, 100);
-                },
-                preConfirm: () => {
-                    const amount = parseFloat(document.getElementById('paymentAmount').value);
-                    const category = document.getElementById('paymentCategory').value;
-                    const description = document.getElementById('paymentDescription').value;
+                </div>
+            `;
+        }
+
+        Swal.fire({
+            title: 'Record Payment - ' + feeType,
+            html: `
+                <div class="text-left">
+                    <div class="mb-4 p-3 bg-blue-50 border border-blue-300 rounded-md">
+                        <p class="text-sm text-blue-800"><strong>📋 Fee Details</strong></p>
+                        <div class="grid grid-cols-2 gap-3 mt-2 text-sm">
+                            <div>
+                                <p class="text-xs text-blue-600 font-semibold">Fee Type</p>
+                                <p class="font-bold text-blue-900">${feeType}</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-blue-600 font-semibold">Total Due</p>
+                                <p class="font-bold text-blue-900">₹${amount.toFixed(2)}</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-blue-600 font-semibold">Current Balance</p>
+                                <p class="font-bold text-blue-900">₹${currentBalance.toFixed(2)}</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-blue-600 font-semibold">Status</p>
+                                <p class="font-bold text-red-600">Outstanding</p>
+                            </div>
+                        </div>
+                    </div>
                     
-                    if (!amount || amount <= 0) {
-                        Swal.showValidationMessage('Please enter a valid amount');
-                        return false;
-                    }
+                    ${advanceHtml}
                     
-                    return {
-                        student_id: studentId,
-                        amount: amount,
-                        category: category,
-                        description: description,
-                        current_balance: currentBalance
-                    };
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Amount to Pay (₹)</label>
+                        <input type="number" id="paymentAmount" value="${amount.toFixed(2)}" min="0.01" step="0.01" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                        <p class="text-xs text-gray-600 mt-1">📌 You can modify this amount for partial payment. Advance will auto-deduct from the amount you enter.</p>
+                    </div>
+                    
+                    ${amountAfterAdvance > 0 ? `
+                        <div class="mb-4 p-3 bg-orange-50 border border-orange-300 rounded-md">
+                            <p class="text-sm text-orange-800"><strong>⚠️ Amount to Collect After Advance</strong></p>
+                            <p class="text-lg font-bold text-orange-900 mt-1">₹${amountAfterAdvance.toFixed(2)}</p>
+                        </div>
+                    ` : `
+                        <div class="mb-4 p-3 bg-green-50 border border-green-300 rounded-md">
+                            <p class="text-sm text-green-800"><strong>✅ Fully Covered by Advance</strong></p>
+                            <p class="text-xs text-green-700 mt-1">This fee will be completely covered by advance payment</p>
+                        </div>
+                    `}
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Description (Optional)</label>
+                        <textarea id="paymentDescription" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500" rows="2" placeholder="Enter description..."></textarea>
+                    </div>
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: 'Record Payment',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#16a34a',
+            didOpen: () => {
+                setTimeout(() => {
+                    document.getElementById('paymentDescription').focus();
+                }, 100);
+            },
+            preConfirm: () => {
+                const payAmount = parseFloat(document.getElementById('paymentAmount').value);
+                const description = document.getElementById('paymentDescription').value;
+                
+                if (!payAmount || payAmount <= 0) {
+                    Swal.showValidationMessage('Please enter a valid amount');
+                    return false;
                 }
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    submitPayment(result.value);
-                }
-            });
+                
+                return {
+                    student_id: studentId,
+                    amount: payAmount,
+                    original_fee_amount: amount,
+                    category: feeType,
+                    description: description || 'Payment for ' + feeType,
+                    advance_balance: advanceBalance,
+                    advance_deduction: advanceDeduction,
+                    amount_after_advance: amountAfterAdvance,
+                    current_balance: currentBalance
+                };
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                submitPayment(result.value);
+            }
         });
+    } catch (err) {
+        console.error('Error:', err);
+        Swal.fire('Error', 'Failed to load payment details', 'error');
+    }
 }
 
 function closePaymentModal() {
@@ -1466,6 +1690,40 @@ function closePaymentModal() {
 }
 
 function submitPayment(paymentData) {
+    // Check if payment amount is greater than original fee amount
+    if (paymentData.original_fee_amount && paymentData.amount > paymentData.original_fee_amount) {
+        const extraAmount = paymentData.amount - paymentData.original_fee_amount;
+        
+        Swal.fire({
+            title: 'Extra Payment Detected!',
+            html: `
+                <div class="text-left">
+                    <div class="mb-4 p-3 bg-blue-50 border border-blue-300 rounded-md">
+                        <p class="text-sm text-blue-800"><strong>Fee Amount:</strong> ₹${paymentData.original_fee_amount.toFixed(2)}</p>
+                        <p class="text-sm text-blue-800"><strong>Amount Paid:</strong> ₹${paymentData.amount.toFixed(2)}</p>
+                        <p class="text-sm text-green-800 font-bold mt-2"><strong>Extra Amount:</strong> ₹${extraAmount.toFixed(2)}</p>
+                    </div>
+                    <p class="text-sm text-gray-700 mb-3">The student has paid <strong>₹${extraAmount.toFixed(2)}</strong> more than the fee amount.</p>
+                    <p class="text-sm text-gray-700 font-semibold">This extra amount will be saved as advance payment for future use.</p>
+                </div>
+            `,
+            icon: 'question',
+            showCancelButton: false,
+            confirmButtonText: '✓ Save as Advance',
+            confirmButtonColor: '#a855f7'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // User wants to save extra as advance
+                processPaymentWithAdvance(paymentData, extraAmount);
+            }
+        });
+    } else {
+        // Normal payment, no extra amount
+        processPaymentNormally(paymentData);
+    }
+}
+
+function processPaymentWithAdvance(paymentData, extraAmount) {
     Swal.fire({
         title: 'Processing...',
         allowOutsideClick: false,
@@ -1477,10 +1735,11 @@ function submitPayment(paymentData) {
 
     const formData = new FormData();
     formData.append('student_id', paymentData.student_id);
-    formData.append('amount', paymentData.amount);
+    formData.append('amount', paymentData.original_fee_amount); // Only record the actual fee amount
     formData.append('category', paymentData.category);
     formData.append('description', paymentData.description);
 
+    // First, record the payment (only the fee amount)
     fetch('api/save_payment.php', {
         method: 'POST',
         body: formData
@@ -1488,11 +1747,107 @@ function submitPayment(paymentData) {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
+                // Payment recorded, now save extra as advance
+                const advanceFormData = new FormData();
+                advanceFormData.append('student_id', paymentData.student_id);
+                advanceFormData.append('amount', extraAmount);
+                advanceFormData.append('description', 'Extra payment saved as advance');
+
+                return fetch('api/save_advance_payment.php', {
+                    method: 'POST',
+                    body: advanceFormData
+                });
+            } else {
+                throw new Error(data.message || 'Failed to record payment');
+            }
+        })
+        .then(async response => {
+            if (!response.ok) {
+                const text = await response.text();
+                throw new Error(`Advance payment failed (${response.status}): ${text || 'Unknown error'}`);
+            }
+            return response.json();
+        })
+        .then(advanceData => {
+            if (advanceData.success) {
                 Swal.fire({
+                    position: "top-end",
                     icon: 'success',
-                    title: 'Success!',
-                    text: 'Payment has been recorded successfully',
-                    confirmButtonColor: '#0d9488',
+                    toast: true,
+                    title: `Payment recorded successfully! Extra ₹${extraAmount.toFixed(2)} saved as advance.`,
+                    showConfirmButton: false,
+                    timerProgressBar: true,
+                    timer: 3000
+                }).then(() => {
+                    location.reload();
+                });
+            } else {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Partial Success',
+                    text: 'Payment recorded but failed to save extra as advance: ' + advanceData.message,
+                    confirmButtonColor: '#f59e0b'
+                }).then(() => {
+                    location.reload();
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: 'An error occurred while processing payment: ' + error.message,
+                confirmButtonColor: '#dc2626'
+            });
+        });
+}
+
+function processPaymentNormally(paymentData) {
+    Swal.fire({
+        title: 'Processing...',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+
+    const formData = new FormData();
+    formData.append('student_id', paymentData.student_id);
+    // If original_fee_amount exists and is less than entered amount, use original fee amount
+    // Otherwise use the amount entered
+    const amountToRecord = (paymentData.original_fee_amount && paymentData.amount > paymentData.original_fee_amount) 
+        ? paymentData.original_fee_amount 
+        : paymentData.amount;
+    formData.append('amount', amountToRecord);
+    formData.append('category', paymentData.category);
+    formData.append('description', paymentData.description);
+
+    fetch('api/save_payment.php', {
+        method: 'POST',
+        body: formData
+    })
+        .then(async response => {
+            if (!response.ok) {
+                const text = await response.text();
+                throw new Error(`Server ${response.status}: ${text || 'Failed to record payment'}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                const message = data.advance_deducted && data.advance_deducted > 0 
+                    ? `Payment recorded! ₹${data.advance_deducted.toFixed(2)} deducted from advance.` 
+                    : 'Payment recorded successfully';
+                    
+                Swal.fire({
+                    position: "top-end",
+                    icon: 'success',
+                    toast: true,
+                    title: message,
+                    showConfirmButton: false,
+                    timerProgressBar: true,
                     timer: 2000
                 }).then(() => {
                     location.reload();
@@ -1511,7 +1866,7 @@ function submitPayment(paymentData) {
             Swal.fire({
                 icon: 'error',
                 title: 'Error!',
-                text: 'An error occurred while recording payment',
+                text: error.message || 'An error occurred while recording payment',
                 confirmButtonColor: '#dc2626'
             });
         });
@@ -1565,6 +1920,167 @@ function downloadDocument(filePath, fileName) {
         });
 }
 
+// ============ ADVANCE PAYMENT FUNCTIONS ============
+
+// Open advance payment modal
+function openAdvancePaymentModal(student) {
+    // Fetch current advance payment balance
+    fetch(`api/get_advance_payment.php?student_id=${student.id}`)
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) {
+                Swal.fire('Error', 'Failed to fetch advance payment info', 'error');
+                return;
+            }
+            
+            const currentAdvance = data.advance_balance || 0;
+            let historyHtml = '';
+            
+            // Build advance payment history
+            if (data.history && data.history.length > 0) {
+                historyHtml = '<div class="mb-4"><p class="text-sm font-semibold text-gray-700 mb-2">Advance Payment History:</p>';
+                historyHtml += '<div class="space-y-2 max-h-48 overflow-y-auto">';
+                
+                data.history.forEach(h => {
+                    const dateObj = new Date(h.payment_date);
+                    const dateStr = dateObj.toLocaleDateString('en-IN');
+                    historyHtml += `
+                        <div class="p-2 bg-gray-50 border border-gray-200 rounded">
+                            <div class="flex justify-between items-center">
+                                <span class="font-medium text-gray-700">₹${parseFloat(h.amount).toFixed(2)}</span>
+                                <span class="text-xs text-gray-500">${dateStr}</span>
+                            </div>
+                            <div class="text-xs text-gray-600">${h.description || 'Advance Payment'}</div>
+                        </div>
+                    `;
+                });
+                
+                historyHtml += '</div></div>';
+            }
+            
+            Swal.fire({
+                title: `Advance Payment - ${student.name}`,
+                html: `
+                    <div class="text-left">
+                        <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                            <p class="text-sm text-blue-800"><strong>Current Advance Balance:</strong> ₹${currentAdvance.toFixed(2)}</p>
+                        </div>
+                        
+                        ${historyHtml}
+                        
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Advance Amount (₹)</label>
+                            <input type="number" id="advanceAmount" value="" min="0.01" step="0.01" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="Enter advance amount">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Description (Optional)</label>
+                            <input type="text" id="advanceDescription" class="w-full px-3 py-2 border border-gray-300 rounded-md" placeholder="e.g., Advance for next month">
+                        </div>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonText: 'Record Advance Payment',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#0d9488',
+                didOpen: () => {
+                    setTimeout(() => {
+                        document.getElementById('advanceAmount').focus();
+                    }, 100);
+                },
+                preConfirm: () => {
+                    const amount = parseFloat(document.getElementById('advanceAmount').value);
+                    const description = document.getElementById('advanceDescription').value;
+                    
+                    if (!amount || amount <= 0) {
+                        Swal.showValidationMessage('Please enter a valid amount');
+                        return false;
+                    }
+                    
+                    return {
+                        student_id: student.id,
+                        amount: amount,
+                        description: description || 'Advance Payment'
+                    };
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    submitAdvancePayment(result.value);
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            Swal.fire('Error', 'Failed to load advance payment information', 'error');
+        });
+}
+
+// Submit advance payment
+function submitAdvancePayment(paymentData) {
+    Swal.fire({
+        title: 'Processing...',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+
+    const formData = new FormData();
+    formData.append('student_id', paymentData.student_id);
+    formData.append('amount', paymentData.amount);
+    formData.append('description', paymentData.description);
+
+    console.log('Submitting advance payment:', {
+        student_id: paymentData.student_id,
+        amount: paymentData.amount,
+        description: paymentData.description
+    });
+
+    fetch('api/save_advance_payment.php', {
+        method: 'POST',
+        body: formData
+    })
+        .then(response => {
+            console.log('Response status:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('Response data:', data);
+            if (data.success) {
+                Swal.fire({
+                    position: "top-end",
+                    icon: 'success',
+                    toast: true,
+                    title: 'Advance payment recorded successfully',
+                    showConfirmButton: false,
+                    timerProgressBar: true,
+                    timer: 2000
+                }).then(() => {
+                    location.reload();
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: data.message || 'Failed to record advance payment',
+                    confirmButtonColor: '#dc2626'
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: 'An error occurred while recording advance payment: ' + error.message,
+                confirmButtonColor: '#dc2626'
+            });
+        });
+}
+
+// ============ END ADVANCE PAYMENT FUNCTIONS ============
+
 // Toggle Student Status Function
 function toggleStudentStatus(studentId, currentStatus, buttonElement) {
     const newStatus = currentStatus ? 0 : 1;
@@ -1596,12 +2112,13 @@ function toggleStudentStatus(studentId, currentStatus, buttonElement) {
                 .then(data => {
                     if (data.success) {
                         Swal.fire({
-                            icon: 'success',
-                            title: 'Success!',
-                            text: data.message,
-                            confirmButtonColor: '#0d9488',
+                             position: "top-end",
+                             icon: 'success',
+                             toast: true,
+                            title: data.message,
+                            showConfirmButton: false,
                             timer: 1500,
-                            showConfirmButton: false
+                            timerProgressBar: true
                         }).then(() => {
                             // Reload page to reflect changes
                             location.reload();
@@ -1724,11 +2241,12 @@ function deactivateClassBatch() {
                         if (data.success) {
                             const updated = Number(data.updated) || 0;
                             Swal.fire({
+                                position: "top-end",
                                 icon: 'success',
-                                title: 'Done',
-                                text: `Deactivated ${updated} student${updated === 1 ? '' : 's'} successfully.`,
+                                toast: true,
+                                title: `Deactivated ${updated} student${updated === 1 ? '' : 's'} successfully.`,
                                 timer: 1800,
-                                showConfirmButton: false
+                                timerProgressBar: true,
                             }).then(() => {
                                 location.reload();
                             });
