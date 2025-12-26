@@ -788,6 +788,17 @@
     color: var(--payment-text-secondary);
 }
 
+/* 17. DESCRIPTION COLUMN - Single line with max height */
+.payments-table tbody td:nth-child(5),
+#paymentHistoryTable tbody td:nth-child(5),
+#paymentHistoryTableBody td:nth-child(4) {
+    max-height: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 200px;
+}
+
 /* Responsive Student Form Grid */
 .student-form-grid {
     display: grid;
