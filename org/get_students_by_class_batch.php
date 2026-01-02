@@ -20,20 +20,20 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 
 $class = isset($_GET['class']) ? trim($_GET['class']) : '';
 $batch = isset($_GET['batch']) ? trim($_GET['batch']) : '';
+$stream = isset($_GET['stream']) ? trim($_GET['stream']) : '';
 
-if ($class === '' || $batch === '') {
-    echo json_encode(['success' => false, 'message' => 'Class and batch are required']);
+if ($class === '' || $batch === '' || $stream === '') {
+    echo json_encode(['success' => false, 'message' => 'Class, batch and stream are required']);
     exit;
 }
 
-// Fetch all active students matching the class and batch
-$stmt = $conn->prepare("SELECT id, name, roll_number, class, batch FROM students WHERE org_id = ? AND class = ? AND batch = ? AND is_active = 1 ORDER BY roll_number ASC, name ASC");
+// Fetch all active students matching the class, batch, and stream
+$stmt = $conn->prepare("SELECT id, name, roll_number, class, batch, stream FROM students WHERE org_id = ? AND class = ? AND batch = ? AND stream = ? AND is_active = 1 ORDER BY roll_number ASC, name ASC");
 if (!$stmt) {
     echo json_encode(['success' => false, 'message' => 'Failed to prepare statement']);
     exit;
 }
-
-$stmt->bind_param('iss', $org_id, $class, $batch);
+$stmt->bind_param('isss', $org_id, $class, $batch, $stream);
 
 if ($stmt->execute()) {
     $result = $stmt->get_result();
@@ -45,7 +45,8 @@ if ($stmt->execute()) {
             'name' => $row['name'],
             'roll_number' => $row['roll_number'],
             'class' => $row['class'],
-            'batch' => $row['batch']
+            'batch' => $row['batch'],
+            'stream' => $row['stream']
         ];
     }
     

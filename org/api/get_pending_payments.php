@@ -70,9 +70,62 @@ if ($result && $result->num_rows > 0) {
             'category' => $category,
             'type' => $type,
             'description' => $row['description'] ?? '',
-            'date' => date('M Y', strtotime($row['created_at']))
+            'date' => date('M Y', strtotime($row['created_at'])),
+            'full_date' => $row['created_at']
         ];
     }
+}
+
+// Group pending items by month for better display
+foreach ($pending_by_category as $fee_type => &$category_data) {
+    $months_pending = [];
+    foreach ($category_data['items'] as $item) {
+        if ($item['type'] === 'credit') {
+            // Extract month from category if present (e.g., "Monthly Fee - December 2025")
+            if (preg_match('/ - ([A-Za-z]+ \d{4})$/', $item['category'], $matches)) {
+                $month_year = $matches[1];
+                if (!isset($months_pending[$month_year])) {
+                    $months_pending[$month_year] = [
+                        'month' => $month_year,
+                        'amount' => 0,
+                        'paid' => 0,
+                        'balance' => 0
+                    ];
+                }
+                $months_pending[$month_year]['amount'] += abs($item['amount']);
+            }
+        } else if ($item['type'] === 'debit') {
+            // Track payments against months
+            if (preg_match('/ - ([A-Za-z]+ \d{4})$/', $item['category'], $matches)) {
+                $month_year = $matches[1];
+                if (!isset($months_pending[$month_year])) {
+                    $months_pending[$month_year] = [
+                        'month' => $month_year,
+                        'amount' => 0,
+                        'paid' => 0,
+                        'balance' => 0
+                    ];
+                }
+                $months_pending[$month_year]['paid'] += abs($item['amount']);
+            }
+        }
+    }
+    
+    // Calculate balance for each month and filter only unpaid ones
+    $unpaid_months = [];
+    foreach ($months_pending as $month => &$data) {
+        $data['balance'] = $data['amount'] - $data['paid'];
+        if ($data['balance'] > 0) {
+            $unpaid_months[] = $data;
+        }
+    }
+    
+    // Sort months by date (newest first)
+    usort($unpaid_months, function($a, $b) {
+        return strtotime($b['month']) - strtotime($a['month']);
+    });
+    
+    $category_data['unpaid_months'] = $unpaid_months;
 }
 
 // Prepare only categories that still owe money (net negative)

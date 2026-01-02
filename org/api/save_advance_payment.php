@@ -34,12 +34,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
     // Verify student belongs to org (tolerant to missing advance_payment column)
+    $student_name = 'Student';
+    $class_name = '';
+    $batch_name = '';
+    
     try {
-        $check = $conn->query("SELECT id, advance_payment FROM students WHERE id = $student_id AND org_id = {$_SESSION['user_id']}");
+        $check = $conn->query("SELECT id, advance_payment, name, class, batch FROM students WHERE id = $student_id AND org_id = {$_SESSION['user_id']}");
     } catch (Exception $e) {
         // If advance_payment column doesn't exist, try without it
         if (stripos($e->getMessage(), 'Unknown column') !== false) {
-            $check = $conn->query("SELECT id FROM students WHERE id = $student_id AND org_id = {$_SESSION['user_id']}");
+            $check = $conn->query("SELECT id, name, class, batch FROM students WHERE id = $student_id AND org_id = {$_SESSION['user_id']}");
             $current_advance = 0.0;
         } else {
             http_response_code(500);
@@ -55,11 +59,53 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     
     // Get current advance if not already set
+    $student = $check->fetch_assoc();
+    $student_name = $student['name'] ?? 'Student';
+    $class_id = $student['class'] ?? null;
+    $batch_id = $student['batch'] ?? null;
+    
     if (!isset($current_advance)) {
-        $student = $check->fetch_assoc();
         $current_advance = floatval($student['advance_payment'] ?? 0);
     }
     $new_advance = $current_advance + $amount;
+    
+    // Get class and batch names
+    $class_name = $class_id ? "$class_id" : '';
+    $batch_name = $batch_id ? "$batch_id" : '';
+    
+    try {
+        if ($class_id) {
+            $c = $conn->query("SELECT class_name, name FROM classes WHERE id = $class_id");
+            if ($c && $c->num_rows > 0) {
+                $class_row = $c->fetch_assoc();
+                $class_name = $class_row['class_name'] ?? $class_row['name'] ?? "$class_id";
+            }
+        }
+        
+        if ($batch_id) {
+            $b = $conn->query("SELECT batch_name, name FROM batches WHERE id = $batch_id");
+            if ($b && $b->num_rows > 0) {
+                $batch_row = $b->fetch_assoc();
+                $batch_name = $batch_row['batch_name'] ?? $batch_row['name'] ?? "$batch_id";
+            }
+        }
+    } catch (Exception $e) {
+        // Silently fail
+    }
+    
+    // Get organization details
+    $org_name = 'Educational Institution';
+    $org_logo = '';
+    try {
+        $org_result = $conn->query("SELECT name, logo FROM organizations WHERE id = {$_SESSION['user_id']}");
+        if ($org_result && $org_result->num_rows > 0) {
+            $org_data = $org_result->fetch_assoc();
+            $org_name = $org_data['name'] ?? 'Educational Institution';
+            $org_logo = $org_data['logo'] ?? '';
+        }
+    } catch (Exception $e) {
+        // Silently fail
+    }
     
     // Start transaction
     $conn->begin_transaction();
@@ -103,10 +149,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Commit transaction
         $conn->commit();
         
+        $payment_id = $conn->insert_id;
+        
         echo json_encode([
             'success' => true,
             'message' => 'Advance payment recorded successfully',
-            'advance_payment' => $new_advance
+            'payment_id' => $payment_id,
+            'advance_payment' => $new_advance,
+            'student_name' => $student_name,
+            'class_name' => $class_name,
+            'batch_name' => $batch_name,
+            'org_name' => $org_name,
+            'org_logo' => $org_logo
         ]);
         
     } catch (Exception $e) {

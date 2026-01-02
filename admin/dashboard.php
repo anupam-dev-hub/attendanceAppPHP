@@ -19,6 +19,33 @@ $result = $conn->query($sql);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .dropdown { position: relative; display: inline-block; }
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #fff;
+            min-width: 200px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1000;
+            border-radius: 0.375rem;
+            margin-top: 0.5rem;
+            top: 100%;
+            right: 0;
+        }
+        .dropdown-content a {
+            color: #1f2937;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            transition: background-color 0.2s;
+            font-size: 0.875rem;
+        }
+        .dropdown-content a:hover { background-color: #f3f4f6; }
+        .dropdown:hover .dropdown-content { display: block; }
+        .dropdown.open .dropdown-content { display: block; }
+        .dropdown-btn { cursor: pointer; }
+    </style>
 </head>
 <body class="bg-gray-50 font-sans antialiased">
     <nav class="bg-blue-600 shadow-lg">
@@ -41,7 +68,15 @@ $result = $conn->query($sql);
                             </span>
                         <?php endif; ?>
                     </a>
-                    <a href="settings.php" class="text-white hover:text-blue-100 font-medium transition">Settings</a>
+                    <div class="dropdown">
+                        <span class="dropdown-btn text-white hover:text-blue-100 font-medium transition">
+                            Settings ▾
+                        </span>
+                        <div class="dropdown-content">
+                            <a href="settings.php">Payment Settings</a>
+                            <a href="contact_settings.php">Contact Details</a>
+                        </div>
+                    </div>
                     <a href="../logout.php" class="text-white hover:text-red-200 font-medium transition">Logout</a>
                 </div>
             </div>
@@ -77,8 +112,11 @@ $result = $conn->query($sql);
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><?php echo htmlspecialchars($row['email']); ?></td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><?php echo htmlspecialchars($row['phone']); ?></td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                        <a href="org_details.php?id=<?php echo $row['id']; ?>" class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition">
+                                        <a href="org_details.php?id=<?php echo $row['id']; ?>" class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition mr-2">
                                             View
+                                        </a>
+                                        <a href="edit_org.php?id=<?php echo $row['id']; ?>" class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition">
+                                            Edit
                                         </a>
                                     </td>
                                 </tr>
@@ -94,4 +132,48 @@ $result = $conn->query($sql);
         </div>
     </div>
 </body>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const dropdowns = document.querySelectorAll('.dropdown');
+        const closeAll = () => dropdowns.forEach(d => d.classList.remove('open'));
+        const openDropdown = (dd) => {
+            closeAll();
+            dd.classList.add('open');
+        };
+
+        dropdowns.forEach(dd => {
+            const btn = dd.querySelector('.dropdown-btn');
+            const content = dd.querySelector('.dropdown-content');
+            if (!btn || !content) return;
+
+            // Open on hover
+            btn.addEventListener('mouseenter', function() {
+                openDropdown(dd);
+            });
+
+            // Toggle on click
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const isOpen = dd.classList.contains('open');
+                if (isOpen) {
+                    closeAll();
+                } else {
+                    openDropdown(dd);
+                }
+            });
+
+            // Clicking submenu closes the menu (after navigation)
+            content.addEventListener('click', function(e) {
+                e.stopPropagation();
+                closeAll();
+            });
+        });
+
+        // Close when clicking outside
+        document.addEventListener('click', function() {
+            closeAll();
+        });
+    });
+</script>
 </html>

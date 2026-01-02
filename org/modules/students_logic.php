@@ -42,27 +42,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['cancel_conflict'])) 
     
     // Handle fees - collect from form and store as JSON
     $fees_json = null;
-    $fee_inputs = isset($_POST['fee_inputs']) ? $_POST['fee_inputs'] : [];
     
-    // If fees_json comes directly from JavaScript, parse it
-    if (isset($_POST['fees_json']) && !empty($_POST['fees_json'])) {
-        $fees_json = $_POST['fees_json'];
-    } else {
-        // Build fees_json from individual fee inputs
-        $fees_data = [];
-        if (!empty($_POST)) {
-            foreach ($_POST as $key => $value) {
-                if (strpos($key, 'fee_') === 0) {
-                    $fee_name = substr($key, 5);
-                    $amount = isset($value) && $value !== '' ? floatval($value) : 0;
-                    if ($amount > 0) {
-                        $fees_data[urldecode($fee_name)] = $amount;
-                    }
-                }
-            }
-        }
-        if (!empty($fees_data)) {
-            $fees_json = json_encode($fees_data);
+    // If fees_json comes from the form
+    if (isset($_POST['fees_json'])) {
+        $posted_fees = trim($_POST['fees_json']);
+        // Only use it if it's not empty string, 'null', or '0'
+        if ($posted_fees !== '' && $posted_fees !== 'null' && $posted_fees !== '0') {
+            $fees_json = $posted_fees;
         }
     }
     
@@ -152,10 +138,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['cancel_conflict'])) 
             // Update existing student
             if ($photo_path) {
                 $stmt = $conn->prepare("UPDATE students SET name=?, class=?, stream=?, batch=?, roll_number=?, address=?, phone=?, email=?, photo=?, sex=?, sex_other=?, date_of_birth=?, place_of_birth=?, nationality=?, mother_tongue=?, religion=?, religion_other=?, community=?, community_other=?, native_district=?, pin_code=?, parent_guardian_name=?, parent_contact=?, exam_name=?, exam_total_marks=?, exam_marks_obtained=?, exam_percentage=?, exam_grade=?, admission_amount=?, fees_json=?, is_active=?, remark=? WHERE id=? AND org_id=?");
-                $stmt->bind_param("sssssssssssssssssssssssssiddsdisiii", $name, $class, $stream, $batch, $roll_number, $address, $phone, $email, $photo_path, $sex, $sex_other, $date_of_birth, $place_of_birth, $nationality, $mother_tongue, $religion, $religion_other, $community, $community_other, $native_district, $pin_code, $parent_guardian_name, $parent_contact, $exam_name, $exam_total_marks, $exam_marks_obtained, $exam_percentage, $exam_grade, $admission_amount, $fees_json, $is_active, $remark, $student_id, $org_id);
+                // Type: s s s s s s s s s s s s s s s s s s s s s s s i d d s d s i s i i
+                $stmt->bind_param("sssssssssssssssssssssssiddsdsisii", $name, $class, $stream, $batch, $roll_number, $address, $phone, $email, $photo_path, $sex, $sex_other, $date_of_birth, $place_of_birth, $nationality, $mother_tongue, $religion, $religion_other, $community, $community_other, $native_district, $pin_code, $parent_guardian_name, $parent_contact, $exam_name, $exam_total_marks, $exam_marks_obtained, $exam_percentage, $exam_grade, $admission_amount, $fees_json, $is_active, $remark, $student_id, $org_id);
             } else {
                 $stmt = $conn->prepare("UPDATE students SET name=?, class=?, stream=?, batch=?, roll_number=?, address=?, phone=?, email=?, sex=?, sex_other=?, date_of_birth=?, place_of_birth=?, nationality=?, mother_tongue=?, religion=?, religion_other=?, community=?, community_other=?, native_district=?, pin_code=?, parent_guardian_name=?, parent_contact=?, exam_name=?, exam_total_marks=?, exam_marks_obtained=?, exam_percentage=?, exam_grade=?, admission_amount=?, fees_json=?, is_active=?, remark=? WHERE id=? AND org_id=?");
-                $stmt->bind_param("sssssssssssssssssssssssiddsdisiii", $name, $class, $stream, $batch, $roll_number, $address, $phone, $email, $sex, $sex_other, $date_of_birth, $place_of_birth, $nationality, $mother_tongue, $religion, $religion_other, $community, $community_other, $native_district, $pin_code, $parent_guardian_name, $parent_contact, $exam_name, $exam_total_marks, $exam_marks_obtained, $exam_percentage, $exam_grade, $admission_amount, $fees_json, $is_active, $remark, $student_id, $org_id);
+                $stmt->bind_param("sssssssssssssssssssssssiddsdsisii", $name, $class, $stream, $batch, $roll_number, $address, $phone, $email, $sex, $sex_other, $date_of_birth, $place_of_birth, $nationality, $mother_tongue, $religion, $religion_other, $community, $community_other, $native_district, $pin_code, $parent_guardian_name, $parent_contact, $exam_name, $exam_total_marks, $exam_marks_obtained, $exam_percentage, $exam_grade, $admission_amount, $fees_json, $is_active, $remark, $student_id, $org_id);
             }
 
             if ($stmt->execute()) {

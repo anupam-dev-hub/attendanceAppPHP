@@ -1,5 +1,5 @@
 <!-- org/modals/student_view_modal.php -->
-<div id="viewModal" class="fixed z-20 inset-0 overflow-y-auto hidden" aria-labelledby="view-modal-title" role="dialog" aria-modal="true">
+<div id="viewModal" class="fixed inset-0 overflow-y-auto hidden z-[2001]" aria-labelledby="view-modal-title" role="dialog" aria-modal="true">
     <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
         <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onclick="closeViewModal()"></div>
         <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
@@ -356,13 +356,23 @@
                                     <span class="payment-summary-label">Balance</span>
                                     <span id="netBalance" class="payment-summary-value" aria-live="polite">₹0.00</span>
                                 </div>
+                                <div class="payment-summary-card" role="group" aria-label="Current advance balance">
+                                    <span class="payment-summary-label">Advance Balance</span>
+                                    <span id="advanceBalance" class="payment-summary-value" aria-live="polite">₹0.00</span>
+                                </div>
                             </div>
 
                             <!-- Table Wrapper -->
+                            <div class="mb-2 flex justify-end">
+                                <button id="printSelectedReceiptBtn" onclick="printSelectedPaymentReceipt()" class="hidden bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2 px-4 rounded transition">
+                                    🖨️ Print Receipt
+                                </button>
+                            </div>
                             <div class="payment-table-wrapper" aria-label="Detailed payment history table">
                                 <table id="paymentHistoryTable" class="payments-table display" aria-describedby="noPaymentsMsg">
                                     <thead>
                                         <tr>
+                                            <th scope="col" style="width: 30px;"><input type="checkbox" id="selectAllPayments" style="cursor: pointer;"></th>
                                             <th scope="col">Date</th>
                                             <th scope="col">Amount</th>
                                             <th scope="col">Type</th>

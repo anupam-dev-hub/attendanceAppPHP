@@ -29,19 +29,51 @@ if ($check->num_rows === 0) {
     exit;
 }
 
-// Fetch payment history (all transactions)
-// Assuming table: student_payments(student_id, amount, transaction_type, category, description, created_at)
-$sql = "SELECT id, amount, transaction_type, category, description,
-               COALESCE(created_at, NOW()) AS created_at
-        FROM student_payments
-        WHERE student_id = $student_id
-        ORDER BY created_at DESC, id DESC";
+// Fetch current advance balance from students table
+$advance_balance = 0.0;
+$advance_row = $conn->query("SELECT advance_payment FROM students WHERE id = $student_id");
+if ($advance_row && $advance_row->num_rows > 0) {
+    $advance_balance = floatval($advance_row->fetch_assoc()['advance_payment'] ?? 0);
+}
 
-$result = $conn->query($sql);
+// Fetch payment history (all transactions from both student_payments and advance_payments)
+try {
+    // Try to include advance payments if table exists
+    // Using BINARY to normalize collations for UNION compatibility
+    $sql = "SELECT id, amount, transaction_type, category, CAST(description AS CHAR) AS description,
+                   COALESCE(created_at, NOW()) AS created_at
+            FROM student_payments
+            WHERE student_id = $student_id
+            UNION ALL
+            SELECT id, amount, CAST('debit' AS CHAR) AS transaction_type, 
+                   CAST('Advance Payment' AS CHAR) AS category,
+                   CAST(COALESCE(description, 'Advance Payment') AS CHAR) AS description,
+                   COALESCE(TIMESTAMP(payment_date), created_at, NOW()) AS created_at
+            FROM advance_payments
+            WHERE student_id = $student_id
+            ORDER BY created_at DESC";
+    
+    $result = $conn->query($sql);
+    
+    // If query failed, fallback to student_payments only
+    if (!$result) {
+        throw new Exception($conn->error);
+    }
+} catch (Exception $e) {
+    // Fallback if advance_payments table doesn't exist or query fails
+    $sql = "SELECT id, amount, transaction_type, category, description,
+                   COALESCE(created_at, NOW()) AS created_at
+            FROM student_payments
+            WHERE student_id = $student_id
+            ORDER BY created_at DESC, id DESC";
+    
+    $result = $conn->query($sql);
+}
 
 $payments = [];
 $total_debit = 0.0;    // money paid (+)
 $total_credit = 0.0;   // money owed (- stored as credit)
+$total_advance = 0.0;  // advance payments only
 $net_balance = 0.0;    // running balance (paid - owed)
 
 if ($result) {
@@ -54,6 +86,9 @@ if ($result) {
 
         if ($type === 'debit') {
             $total_debit += abs($amount);
+            if (strcasecmp($row['category'] ?? '', 'Advance Payment') === 0) {
+                $total_advance += abs($amount);
+            }
         } elseif ($type === 'credit') {
             $total_credit += abs($amount);
         }
@@ -79,7 +114,9 @@ echo json_encode([
     'totals' => [
         'total_debit' => round($total_debit, 2),
         'total_credit' => round($total_credit, 2),
-        'balance' => round($balance, 2)
+        'balance' => round($balance, 2),
+        'total_advance' => round($total_advance, 2),
+        'advance_balance' => round($advance_balance, 2)
     ]
 ]);
 exit;

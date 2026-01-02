@@ -36,60 +36,71 @@ function toggleCommunityOther() {
     }
 }
 
+var table; // Global table variable
+
 $(document).ready(function () {
-    var table = $('#studentsTable').DataTable({
+    table = $('#studentsTable').DataTable({
         responsive: true,
         "pageLength": 10,
         "lengthMenu": [[10, 25, 50, -1], [10, 25, 50, "All"]],
         "order": [
-            [2, "asc"],
-            [4, "asc"]
-        ], // Sort by Class (col 2) then Roll No (col 4)
+            [10, "desc"],  // Sort by Status (col 10) - Active (1) first, then Inactive (0)
+            [3, "asc"],   // Then by Class (col 3)
+            [6, "asc"]    // Then by Roll No (col 6)
+        ],
         "columnDefs": [
             {
                 "orderable": false,
-                "targets": [1, 7, 8, 9]
-            }, // Photo, Status, QR Code, and Actions columns not sortable
+                "targets": [2, 11, 12]
+            }, // Photo, QR Code, and Actions columns not sortable
             {
                 "responsivePriority": 1,
-                "targets": 0
+                "targets": 1
             }, // Name - always visible
             {
                 "responsivePriority": 2,
-                "targets": 9
+                "targets": 12
             }, // Actions - always visible
             {
                 "responsivePriority": 10001,
-                "targets": 1
+                "targets": 2
             }, // Photo - hide first
             {
                 "responsivePriority": 10002,
-                "targets": 5
+                "targets": 7
             }, // Balance - hide second
             {
                 "responsivePriority": 10003,
-                "targets": 6
+                "targets": 9
             }, // Phone - hide third
             {
                 "responsivePriority": 10004,
-                "targets": 8
+                "targets": 11
             }, // QR - hide fourth
             {
                 "responsivePriority": 3,
-                "targets": 2
+                "targets": 3
             }, // Class - keep visible longer
             {
                 "responsivePriority": 4,
-                "targets": 3
-            }, // Batch - keep visible longer
+                "targets": 4
+            }, // Stream - keep visible longer
             {
                 "responsivePriority": 5,
-                "targets": 7
-            }, // Status - keep visible longer
+                "targets": 5
+            }, // Batch - keep visible longer
             {
                 "responsivePriority": 6,
-                "targets": 4
-            } // Roll No - keep visible longer
+                "targets": 10
+            }, // Status - keep visible longer
+            {
+                "responsivePriority": 7,
+                "targets": 6
+            }, // Roll No - keep visible longer
+            {
+                "responsivePriority": 8,
+                "targets": 0
+            } // ID - keep visible
         ],
         "language": {
             "lengthMenu": "Show _MENU_ students",
@@ -98,6 +109,25 @@ $(document).ready(function () {
             "infoFiltered": "(filtered from _MAX_ total students)",
             "search": "Search:",
             "zeroRecords": "No matching students found"
+        },
+        initComplete: function () {
+            // Add column search inputs to relevant columns (ID, Name, Class, Stream, Batch, Roll No, Balance, Advance, Phone)
+            this.api().columns([0, 1, 3, 4, 5, 6, 7, 8, 9]).every(function () {
+                var column = this;
+                var title = $(column.header()).text();
+                
+                // Create input element
+                var input = $('<input type="text" placeholder="Search ' + title + '" class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-teal-500 mt-1" />')
+                    .appendTo($(column.header()))
+                    .on('click', function(e) {
+                        e.stopPropagation(); // Prevent sorting when clicking input
+                    })
+                    .on('keyup change', function () {
+                        if (column.search() !== this.value) {
+                            column.search(this.value).draw();
+                        }
+                    });
+            });
         }
     });
     
@@ -120,18 +150,167 @@ $(document).ready(function () {
     $.fn.dataTable.ext.search.push(
         function (settings, data, dataIndex) {
             var statusFilter = $('#statusFilter').val();
-            if (statusFilter === '') {
-                return true; // Show all
-            }
+            var streamFilter = $('#streamFilter').val();
+            var districtFilter = $('#districtFilter').val();
+            var religionFilter = $('#religionFilter').val();
+            var communityFilter = $('#communityFilter').val();
+            var genderFilter = $('#genderFilter').val();
+            var nationalityFilter = $('#nationalityFilter').val();
+            var percentageFilter = $('#percentageFilter').val();
+            var balanceFilter = $('#balanceFilter').val();
+            var advanceFilter = $('#advanceFilter').val();
+            
             var row = table.row(dataIndex).node();
-            var rowStatus = $(row).attr('data-status');
-            return rowStatus === statusFilter;
+            var rowData = table.row(dataIndex).data();
+            
+            // Status filter
+            if (statusFilter !== '') {
+                var rowStatus = $(row).attr('data-status');
+                if (rowStatus !== statusFilter) return false;
+            }
+            
+            // Get student data from row attributes
+            var studentDataAttr = $(row).find('.payment-btn').attr('data-student-fee');
+            var studentData = null;
+            if (studentDataAttr) {
+                try {
+                    studentData = JSON.parse(studentDataAttr);
+                } catch(e) {}
+            }
+            
+            // Stream filter
+            if (streamFilter !== '' && studentData) {
+                if ((studentData.stream || '') !== streamFilter) return false;
+            }
+            
+            // Native District filter
+            if (districtFilter !== '' && studentData) {
+                if ((studentData.native_district || '') !== districtFilter) return false;
+            }
+            
+            // Religion filter
+            if (religionFilter !== '' && studentData) {
+                if ((studentData.religion || '') !== religionFilter) return false;
+            }
+            
+            // Community filter
+            if (communityFilter !== '' && studentData) {
+                if ((studentData.community || '') !== communityFilter) return false;
+            }
+            
+            // Gender filter
+            if (genderFilter !== '' && studentData) {
+                if ((studentData.sex || '') !== genderFilter) return false;
+            }
+            
+            // Nationality filter
+            if (nationalityFilter !== '' && studentData) {
+                if ((studentData.nationality || '') !== nationalityFilter) return false;
+            }
+            
+            // Percentage filter
+            if (percentageFilter !== '' && studentData) {
+                var percentage = parseFloat(studentData.exam_percentage) || 0;
+                var range = percentageFilter.split('-');
+                var min = parseFloat(range[0]);
+                var max = parseFloat(range[1]);
+                if (percentage < min || percentage > max) return false;
+            }
+            
+            // Balance filter
+            if (balanceFilter !== '' && studentData) {
+                var balance = parseFloat(studentData.net_balance) || 0;
+                if (balanceFilter === 'due' && balance >= 0) return false;
+                if (balanceFilter === 'paid' && balance <= 0) return false;
+                if (balanceFilter === 'clear' && balance !== 0) return false;
+            }
+            
+            // Advance filter
+            if (advanceFilter !== '' && studentData) {
+                var advance = parseFloat(studentData.advance_payment) || 0;
+                if (advanceFilter === 'has' && advance <= 0) return false;
+                if (advanceFilter === 'none' && advance > 0) return false;
+            }
+            
+            return true;
         }
     );
 
     $('#statusFilter').on('change', function () {
         table.draw();
+        updateActiveFilterCount();
     });
+    
+    // Stream filter
+    $('#streamFilter').on('change', function () {
+        $(this).removeClass('border-red-500', 'border-2');
+        table.draw();
+        updateActiveFilterCount();
+    });
+    
+    // Class filter - remove red border on change
+    $('#classFilter').on('change', function () {
+        $(this).removeClass('border-red-500', 'border-2');
+        updateActiveFilterCount();
+    });
+    
+    // Batch filter - remove red border on change
+    $('#batchFilter').on('change', function () {
+        $(this).removeClass('border-red-500', 'border-2');
+        updateActiveFilterCount();
+    });
+    
+    // Native District filter
+    $('#districtFilter').on('change', function() {
+        table.draw();
+        updateActiveFilterCount();
+    });
+    
+    // Religion filter
+    $('#religionFilter').on('change', function() {
+        table.draw();
+        updateActiveFilterCount();
+    });
+    
+    // Community filter
+    $('#communityFilter').on('change', function() {
+        table.draw();
+        updateActiveFilterCount();
+    });
+    
+    // Gender filter
+    $('#genderFilter').on('change', function() {
+        table.draw();
+        updateActiveFilterCount();
+    });
+    
+    // Nationality filter
+    $('#nationalityFilter').on('change', function() {
+        table.draw();
+        updateActiveFilterCount();
+    });
+    
+    // Percentage filter
+    $('#percentageFilter').on('change', function() {
+        table.draw();
+        updateActiveFilterCount();
+    });
+    
+    // Balance filter
+    $('#balanceFilter').on('change', function() {
+        table.draw();
+        updateActiveFilterCount();
+    });
+    
+    // Advance filter
+    $('#advanceFilter').on('change', function() {
+        table.draw();
+        updateActiveFilterCount();
+    });
+    
+    // Update existing filters to update count
+    $('#classFilter').on('change', updateActiveFilterCount);
+    $('#batchFilter').on('change', updateActiveFilterCount);
 
     // Handle payment button clicks via event delegation
     $(document).on('click', 'button.payment-btn', function(e) {
@@ -153,18 +332,16 @@ document.getElementById('studentForm').addEventListener('submit', function (e) {
     // Collect fees data before submission
     const feesJson = collectFeeData();
     
-    if (feesJson) {
-        // Add hidden input for fees_json
-        let feesInput = document.getElementById('feesJsonInput');
-        if (!feesInput) {
-            feesInput = document.createElement('input');
-            feesInput.type = 'hidden';
-            feesInput.id = 'feesJsonInput';
-            feesInput.name = 'fees_json';
-            document.getElementById('studentForm').appendChild(feesInput);
-        }
-        feesInput.value = feesJson;
+    // Always add/update hidden input for fees_json (even if null/empty)
+    let feesInput = document.getElementById('feesJsonInput');
+    if (!feesInput) {
+        feesInput = document.createElement('input');
+        feesInput.type = 'hidden';
+        feesInput.id = 'feesJsonInput';
+        feesInput.name = 'fees_json';
+        document.getElementById('studentForm').appendChild(feesInput);
     }
+    feesInput.value = feesJson || '';
     
     const submitBtn = document.getElementById('submitBtn');
     const submitBtnText = document.getElementById('submitBtnText');
@@ -297,7 +474,6 @@ function openEditModal(student) {
     fetch('get_student_documents.php?student_id=' + student.id)
         .then(response => response.json())
         .then(data => {
-            console.log('Documents API response:', data);
             if (data.success && data.documents && data.documents.length > 0) {
                 const documentsList = document.getElementById('existingDocumentsList');
                 documentsList.innerHTML = '';
@@ -1078,6 +1254,9 @@ function viewStudent(student) {
                     document.getElementById('totalDebit').innerText = `₹${Number(data.totals.total_debit).toFixed(2)}`;
                     document.getElementById('totalCredit').innerText = `₹${Number(data.totals.total_credit).toFixed(2)}`;
                     document.getElementById('netBalance').innerText = `₹${Number(data.totals.balance).toFixed(2)}`;
+                    if (document.getElementById('advanceBalance')) {
+                        document.getElementById('advanceBalance').innerText = `₹${Number(data.totals.advance_balance || 0).toFixed(2)}`;
+                    }
                 }
                 // Hook up filter
                 const filterEl = document.getElementById('paymentTypeFilter');
@@ -1121,9 +1300,10 @@ function renderPaymentRows(payments) {
         table = tableEl.DataTable({
             responsive: true,
             pageLength: 10,
-            order: [[0, 'desc']],
+            order: [[1, 'desc']],
             columnDefs: [
-                { targets: [4], orderable: false }
+                { targets: [0], orderable: false },
+                { targets: [5], orderable: false }
             ],
             createdRow: function (row, data) {
                 // Add modern styling to rows
@@ -1132,7 +1312,7 @@ function renderPaymentRows(payments) {
         });
     }
 
-    const rows = payments.map(p => {
+    const rows = payments.map((p, idx) => {
         const amt = Number(p.amount);
         const type = (p.transaction_type || '').toLowerCase();
         // Show only date part (YYYY-MM-DD)
@@ -1151,7 +1331,11 @@ function renderPaymentRows(payments) {
             : 'bg-gray-100 text-gray-700 border border-gray-200';
         const typeBadge = `<span class="px-2.5 py-1 inline-flex text-xs font-semibold rounded-lg ${typeBadgeClass}">${p.transaction_type || '-'}</span>`;
         
+        // Checkbox with payment data
+        const checkbox = `<input type="checkbox" class="payment-select-cb" data-payment='${JSON.stringify(p)}' style="cursor: pointer;">`;
+        
         return [
+            checkbox,
             dateOnly,
             signedAmt,
             typeBadge,
@@ -1160,6 +1344,9 @@ function renderPaymentRows(payments) {
         ];
     });
     table.rows.add(rows).draw();
+    
+    // Add event listeners for checkboxes
+    setupPaymentCheckboxListeners();
 }
 
 function ensurePaymentDataTable() {
@@ -1350,28 +1537,56 @@ function openPaymentModal(student) {
             
             // Build pending payments HTML
             if (pendingData.success && pendingData.pending_payments && pendingData.pending_payments.length > 0) {
-                pendingPaymentsHtml = '<div class="mb-4 p-3 bg-yellow-50 border border-yellow-300 rounded-md"><div class="text-sm font-semibold text-yellow-800 mb-2">📋 Pending Payments (Click to pay)</div>';
+                pendingPaymentsHtml = '<div class="mb-4 p-3 bg-yellow-50 border border-yellow-300 rounded-md"><div class="text-sm font-semibold text-yellow-800 mb-3 flex items-center"><svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>Pending Payments Details</div>';
                 
                 pendingData.pending_payments.forEach(category => {
                     const feeType = category.fee_type;
                     const netAmount = category.net_amount; // negative = owed
-                    const displayAmount = netAmount.toFixed(2);
+                    const displayAmount = Math.abs(netAmount).toFixed(2);
                     const payAmount = Math.abs(netAmount);
+                    
+                    // Build unpaid months list
+                    let monthsHtml = '';
+                    if (category.unpaid_months && category.unpaid_months.length > 0) {
+                        monthsHtml = '<div class="mt-2 space-y-1">';
+                        category.unpaid_months.forEach(monthData => {
+                            monthsHtml += `
+                                <div class="flex justify-between items-center text-xs bg-white px-2 py-1 rounded border border-yellow-100">
+                                    <span class="text-gray-600">📅 ${monthData.month}</span>
+                                    <div class="text-right">
+                                        <div class="text-blue-600 font-semibold">₹${monthData.amount.toFixed(2)} <span class="text-gray-500">(Fee)</span></div>
+                                        <div class="font-bold text-red-600">₹${monthData.balance.toFixed(2)} <span class="text-gray-500">(Pending)</span></div>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        monthsHtml += '</div>';
+                    }
+                    
                     pendingPaymentsHtml += `
-                        <div class="mb-2 p-2 bg-white border border-yellow-200 rounded cursor-pointer hover:bg-yellow-100 transition" onclick="quickPayPending('${student.id}', '${feeType.replace(/'/g, "\\'")}', ${payAmount})">
-                            <div class="flex justify-between items-center">
-                                <span class="font-medium text-gray-700">${feeType}</span>
-                                <span class="text-yellow-700 font-bold">₹${displayAmount}</span>
+                        <div class="mb-3 p-3 bg-white border border-yellow-200 rounded-lg shadow-sm hover:shadow-md transition cursor-pointer pending-fee-card" data-student-id="${student.id}" data-fee-type="${feeType}" data-amount="${payAmount}">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="font-semibold text-gray-800 flex items-center">
+                                    <svg class="w-4 h-4 mr-1 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    ${feeType}
+                                </span>
+                                <span class="text-lg font-bold text-red-600">₹${displayAmount}</span>
                             </div>
-                            <div class="text-xs text-gray-600 mt-1">${category.items.length} item(s)</div>
+                            <div class="text-xs text-gray-500 mb-1">${category.items.length} transaction(s)</div>
+                            ${monthsHtml}
+                            <div class="mt-2 pt-2 border-t border-gray-200 text-xs text-center text-teal-600 font-medium">
+                                💳 Click to pay this fee
+                            </div>
                         </div>
                     `;
                 });
                 
-                pendingPaymentsHtml += `<div class="mt-2 pt-2 border-t border-yellow-300">
-                    <div class="flex justify-between items-center text-sm font-semibold">
-                        <span>Total Pending:</span>
-                        <span class="text-red-600">₹${pendingData.total_pending.toFixed(2)}</span>
+                pendingPaymentsHtml += `<div class="mt-3 pt-3 border-t border-yellow-300">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-semibold text-gray-700">Total Outstanding:</span>
+                        <span class="text-xl font-bold text-red-600">₹${Math.abs(pendingData.total_pending).toFixed(2)}</span>
                     </div>
                 </div></div>`;
             }
@@ -1427,14 +1642,25 @@ function showPaymentModal(studentName, currentBalance, currentAdvance, pendingPa
                     </ul>
                 </div>
                 
-                <button class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg transition" onclick="recordAdvanceFromModal('${studentId}', '${studentName.replace(/'/g, "\\'")}')" style="cursor: pointer;">
+                <button class="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-lg transition" onclick="recordAdvanceFromModal('${studentId}', '${studentName.replace(/'/g, "\\'")}')">
                     💰 Record Advance Payment
                 </button>
             </div>
         `,
         showCancelButton: true,
         cancelButtonText: 'Close',
-        showConfirmButton: false
+        showConfirmButton: false,
+        didOpen: () => {
+            // Add event listeners for pending fee cards
+            document.querySelectorAll('.pending-fee-card').forEach(card => {
+                card.addEventListener('click', function() {
+                    const studentId = this.getAttribute('data-student-id');
+                    const feeType = this.getAttribute('data-fee-type');
+                    const amount = parseFloat(this.getAttribute('data-amount'));
+                    quickPayPending(studentId, feeType, amount);
+                });
+            });
+        }
     });
 }
 
@@ -1538,8 +1764,12 @@ async function quickPayPending(studentId, feeType, amount) {
     Swal.close();
 
     try {
-        // Fetch student details (fail-fast)
-        const detailsResp = await fetch(`get_student_details.php?student_id=${studentId}`);
+        // Fetch student details and pending payments in parallel
+        const [detailsResp, pendingResp] = await Promise.all([
+            fetch(`get_student_details.php?student_id=${studentId}`),
+            fetch(`api/get_pending_payments.php?student_id=${studentId}`)
+        ]);
+        
         if (!detailsResp.ok) {
             throw new Error(`Student details request failed (${detailsResp.status})`);
         }
@@ -1547,6 +1777,18 @@ async function quickPayPending(studentId, feeType, amount) {
         if (!balanceData.success) {
             Swal.fire('Error', balanceData.message || 'Failed to load student details', 'error');
             return;
+        }
+        
+        // Get pending data
+        let pendingMonths = [];
+        if (pendingResp.ok) {
+            const pendingData = await pendingResp.json();
+            if (pendingData.success && pendingData.pending_payments) {
+                const feeCategory = pendingData.pending_payments.find(cat => cat.fee_type === feeType);
+                if (feeCategory && feeCategory.unpaid_months) {
+                    pendingMonths = feeCategory.unpaid_months;
+                }
+            }
         }
 
         // Fetch advance payment (tolerant to failure)
@@ -1568,6 +1810,42 @@ async function quickPayPending(studentId, feeType, amount) {
         // Calculate amount after advance deduction
         const advanceDeduction = Math.min(advanceBalance, amount);
         const amountAfterAdvance = Math.max(0, amount - advanceDeduction);
+        
+        // Build pending items breakdown
+        let pendingItemsHtml = '';
+        if (pendingMonths.length > 0) {
+            pendingItemsHtml = `
+                <div class="mb-4 p-3 bg-yellow-50 border border-yellow-300 rounded-md">
+                    <p class="text-sm text-yellow-800 mb-2 font-semibold flex items-center">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Pending Items
+                    </p>
+                    <div class="space-y-1 max-h-32 overflow-y-auto">
+            `;
+            
+            pendingMonths.forEach(monthData => {
+                pendingItemsHtml += `
+                    <div class="flex justify-between items-center text-xs bg-white px-3 py-2 rounded border border-yellow-200">
+                        <span class="text-gray-700 font-medium">📅 ${monthData.month}</span>
+                        <div class="text-right">
+                            <div class="font-bold text-blue-600">₹${monthData.amount.toFixed(2)} <span class="text-xs text-gray-500">(Fee)</span></div>
+                            <div class="font-bold text-red-600">₹${monthData.balance.toFixed(2)} <span class="text-xs text-gray-500">(Pending)</span></div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            pendingItemsHtml += `
+                    </div>
+                    <div class="mt-2 pt-2 border-t border-yellow-300 flex justify-between items-center text-sm">
+                        <span class="font-semibold text-gray-700">Total:</span>
+                        <span class="font-bold text-red-600">₹${amount.toFixed(2)}</span>
+                    </div>
+                </div>
+            `;
+        }
 
         let advanceHtml = '';
         if (advanceBalance > 0) {
@@ -1617,6 +1895,8 @@ async function quickPayPending(studentId, feeType, amount) {
                             </div>
                         </div>
                     </div>
+                    
+                    ${pendingItemsHtml}
                     
                     ${advanceHtml}
                     
@@ -1733,6 +2013,8 @@ function processPaymentWithAdvance(paymentData, extraAmount) {
         }
     });
 
+    let paymentResult = null; // capture main payment result for receipt
+
     const formData = new FormData();
     formData.append('student_id', paymentData.student_id);
     formData.append('amount', paymentData.original_fee_amount); // Only record the actual fee amount
@@ -1747,6 +2029,7 @@ function processPaymentWithAdvance(paymentData, extraAmount) {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
+                paymentResult = data;
                 // Payment recorded, now save extra as advance
                 const advanceFormData = new FormData();
                 advanceFormData.append('student_id', paymentData.student_id);
@@ -1771,15 +2054,43 @@ function processPaymentWithAdvance(paymentData, extraAmount) {
         .then(advanceData => {
             if (advanceData.success) {
                 Swal.fire({
-                    position: "top-end",
                     icon: 'success',
-                    toast: true,
-                    title: `Payment recorded successfully! Extra ₹${extraAmount.toFixed(2)} saved as advance.`,
-                    showConfirmButton: false,
-                    timerProgressBar: true,
-                    timer: 3000
-                }).then(() => {
-                    location.reload();
+                    title: `Payment recorded successfully!`,
+                    html: `<p>Fee recorded and extra ₹${extraAmount.toFixed(2)} saved as advance.</p><p>Print combined receipt?</p>`,
+                    confirmButtonColor: '#16a34a',
+                    confirmButtonText: '🖨️ Print Receipt',
+                    showCancelButton: true,
+                    cancelButtonText: 'Close',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const studentData = {
+                            name: (paymentResult?.student_name) || advanceData.student_name || 'Student',
+                            student_id: paymentData.student_id,
+                            class_name: (paymentResult?.class_name) || advanceData.class_name || '',
+                            batch_name: (paymentResult?.batch_name) || advanceData.batch_name || ''
+                        };
+                        const baseAmount = paymentResult?.amount ?? paymentData.original_fee_amount ?? 0;
+                        const paymentDist = paymentResult?.payment_distribution ? [...paymentResult.payment_distribution] : [];
+                        paymentDist.push({ month: 'Advance', fee_category: 'Advance Saved', amount_paid: extraAmount });
+                        const receiptData = {
+                            payment_id: paymentResult?.payment_id || advanceData.payment_id,
+                            amount: baseAmount + extraAmount,
+                            fee_category: (paymentResult?.fee_category || paymentData.category || 'Fee') + ' + Advance',
+                            payment_mode: paymentResult?.payment_mode || 'Cash',
+                            payment_date: paymentResult?.payment_date || new Date().toISOString(),
+                            student_name: studentData.name,
+                            class_name: studentData.class_name,
+                            batch_name: studentData.batch_name,
+                            payment_distribution: paymentDist,
+                            remaining_months: paymentResult?.remaining_months || []
+                        };
+                        generateReceipt(receiptData, studentData, receiptData.remaining_months);
+                    }
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
                 });
             } else {
                 Swal.fire({
@@ -1836,22 +2147,97 @@ function processPaymentNormally(paymentData) {
             return response.json();
         })
         .then(data => {
+            console.log('Payment response data:', data);
+            
             if (data.success) {
-                const message = data.advance_deducted && data.advance_deducted > 0 
-                    ? `Payment recorded! ₹${data.advance_deducted.toFixed(2)} deducted from advance.` 
-                    : 'Payment recorded successfully';
+                let message = 'Payment recorded successfully';
+                let remainingHtml = '';
+                
+                // Show remaining months breakdown
+                if (data.remaining_months && data.remaining_months.length > 0) {
+                    remainingHtml = '<div class="mt-3 p-3 bg-yellow-50 border border-yellow-300 rounded-md text-left">';
+                    remainingHtml += '<p class="text-sm font-semibold text-yellow-800 mb-2">📋 Remaining Pending:</p>';
+                    remainingHtml += '<div class="space-y-1">';
                     
-                Swal.fire({
-                    position: "top-end",
-                    icon: 'success',
-                    toast: true,
-                    title: message,
-                    showConfirmButton: false,
-                    timerProgressBar: true,
-                    timer: 2000
-                }).then(() => {
-                    location.reload();
-                });
+                    data.remaining_months.forEach(month => {
+                        remainingHtml += `<div class="flex justify-between items-center text-sm border-b border-yellow-200 pb-1 mb-1 last:border-0">
+                            <span class="text-gray-700 font-medium">${month.month}</span>
+                            <div class="text-right">
+                                <div class="text-xs text-gray-500">Fee: ₹${parseFloat(month.original_fee).toFixed(2)}</div>
+                                <div class="font-bold text-red-600">Pending: ₹${parseFloat(month.remaining).toFixed(2)}</div>
+                            </div>
+                        </div>`;
+                    });
+                    
+                    remainingHtml += `</div>`;
+                    remainingHtml += `<div class="mt-2 pt-2 border-t border-yellow-300 flex justify-between text-sm">
+                        <span class="font-semibold text-gray-700">Total Remaining:</span>
+                        <span class="font-bold text-red-600">₹${parseFloat(data.total_remaining || 0).toFixed(2)}</span>
+                    </div>`;
+                    remainingHtml += '</div>';
+                }
+                
+                if (data.advance_deducted && data.advance_deducted > 0) {
+                    message = `Payment recorded! ₹${data.advance_deducted.toFixed(2)} deducted from advance.`;
+                }
+                
+                if (remainingHtml) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: message,
+                        html: remainingHtml,
+                        confirmButtonColor: '#16a34a',
+                        confirmButtonText: 'OK',
+                        showDenyButton: true,
+                        denyButtonText: '🖨️ Print Receipt',
+                        denyButtonColor: '#3b82f6',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false
+                    }).then((result) => {
+                        if (result.isDenied) {
+                            console.log('Print Receipt clicked');
+                            // Student data comes from API response
+                            const studentData = {
+                                name: data.student_name || 'Student',
+                                student_id: paymentData.student_id,
+                                class_name: data.class_name || '',
+                                batch_name: data.batch_name || ''
+                            };
+                            console.log('Generating receipt with:', studentData, data.remaining_months);
+                            generateReceipt(data, studentData, data.remaining_months || []);
+                        }
+                        // Reload after button is clicked
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1000);
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'success',
+                        title: message,
+                        html: '<p>All fees cleared! A receipt will be generated.</p>',
+                        confirmButtonColor: '#16a34a',
+                        confirmButtonText: 'Print Receipt',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false
+                    }).then(() => {
+                        console.log('All fees cleared - generating receipt');
+                        // Student data comes from API response
+                        const studentData = {
+                            name: data.student_name || 'Student',
+                            student_id: paymentData.student_id,
+                            class_name: data.class_name || '',
+                            batch_name: data.batch_name || ''
+                        };
+                        console.log('Generating receipt with:', studentData, data.remaining_months);
+                        generateReceipt(data, studentData, data.remaining_months || []);
+                        
+                        // Reload after receipt generation
+                        setTimeout(() => {
+                            location.reload();
+                        }, 2000);
+                    });
+                }
             } else {
                 Swal.fire({
                     icon: 'error',
@@ -2049,15 +2435,46 @@ function submitAdvancePayment(paymentData) {
             console.log('Response data:', data);
             if (data.success) {
                 Swal.fire({
-                    position: "top-end",
                     icon: 'success',
-                    toast: true,
                     title: 'Advance payment recorded successfully',
-                    showConfirmButton: false,
-                    timerProgressBar: true,
-                    timer: 2000
-                }).then(() => {
-                    location.reload();
+                    text: 'Would you like to print a receipt?',
+                    confirmButtonColor: '#16a34a',
+                    confirmButtonText: '🖨️ Print Receipt',
+                    showCancelButton: true,
+                    cancelButtonText: 'Close',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const studentData = {
+                            name: data.student_name || 'Student',
+                            student_id: paymentData.student_id,
+                            class_name: data.class_name || '',
+                            batch_name: data.batch_name || ''
+                        };
+                        const receiptData = {
+                            payment_id: data.payment_id,
+                            amount: paymentData.amount,
+                            fee_category: 'Advance Payment',
+                            payment_mode: 'Cash',
+                            payment_date: new Date().toISOString(),
+                            student_name: data.student_name,
+                            class_name: data.class_name,
+                            batch_name: data.batch_name,
+                            payment_distribution: [
+                                {
+                                    month: '-',
+                                    fee_category: 'Advance Payment',
+                                    amount_paid: paymentData.amount
+                                }
+                            ],
+                            remaining_months: []
+                        };
+                        generateReceipt(receiptData, studentData, []);
+                    }
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
                 });
             } else {
                 Swal.fire({
@@ -2151,12 +2568,35 @@ function toggleStudentStatus(studentId, currentStatus, buttonElement) {
 function deactivateClassBatch() {
     const classVal = document.getElementById('classFilter').value;
     const batchVal = document.getElementById('batchFilter').value;
+    const streamVal = document.getElementById('streamFilter').value;
 
-    if (!classVal || !batchVal) {
+    // Remove any existing red borders
+    document.getElementById('classFilter').classList.remove('border-red-500', 'border-2');
+    document.getElementById('batchFilter').classList.remove('border-red-500', 'border-2');
+    document.getElementById('streamFilter').classList.remove('border-red-500', 'border-2');
+
+    if (!classVal || !batchVal || !streamVal) {
+        // Show the filters panel if hidden
+        const panel = document.getElementById('advancedFiltersPanel');
+        if (panel.classList.contains('hidden')) {
+            panel.classList.remove('hidden');
+        }
+        
+        // Add red border to empty filters
+        if (!classVal) {
+            document.getElementById('classFilter').classList.add('border-red-500', 'border-2');
+        }
+        if (!batchVal) {
+            document.getElementById('batchFilter').classList.add('border-red-500', 'border-2');
+        }
+        if (!streamVal) {
+            document.getElementById('streamFilter').classList.add('border-red-500', 'border-2');
+        }
+        
         Swal.fire({
             icon: 'warning',
-            title: 'Select Class & Batch',
-            text: 'Please select both Class and Batch to proceed.'
+            title: 'Select Class, Batch & Stream',
+            text: 'Please select Class, Batch and Stream to proceed.'
         });
         return;
     }
@@ -2171,8 +2611,9 @@ function deactivateClassBatch() {
         }
     });
 
-    // Fetch students matching the class and batch
-    fetch(`get_students_by_class_batch.php?class=${encodeURIComponent(classVal)}&batch=${encodeURIComponent(batchVal)}`)
+    // Fetch students matching the class, batch, and stream
+    let fetchUrl = `get_students_by_class_batch.php?class=${encodeURIComponent(classVal)}&batch=${encodeURIComponent(batchVal)}&stream=${encodeURIComponent(streamVal)}`;
+    fetch(fetchUrl)
         .then(res => res.json())
         .then(data => {
             if (!data.success) {
@@ -2191,20 +2632,21 @@ function deactivateClassBatch() {
                 Swal.fire({
                     icon: 'info',
                     title: 'No Active Students',
-                    text: `No active students found in ${classVal} - ${batchVal}`
+                    text: `No active students found in ${classVal} - ${batchVal} - ${streamVal}`
                 });
                 return;
             }
 
             // Build student list HTML
             let studentListHtml = `<div class="text-left mb-3">
-                <p class="mb-2"><strong>${count} active student${count === 1 ? '' : 's'}</strong> in <strong>${classVal}</strong> - <strong>${batchVal}</strong> will be deactivated:</p>
+                <p class="mb-2"><strong>${count} active student${count === 1 ? '' : 's'}</strong> in <strong>${classVal}</strong> - <strong>${batchVal}</strong> - <strong>${streamVal}</strong> will be deactivated:</p>
                 <div class="max-h-60 overflow-y-auto border border-gray-300 rounded p-3 bg-gray-50">
                     <ul class="list-disc list-inside space-y-1">`;
             
             students.forEach(student => {
                 const rollNo = student.roll_number || 'N/A';
-                studentListHtml += `<li class="text-sm"><strong>${student.name}</strong> (Roll: ${rollNo})</li>`;
+                const stream = student.stream ? ` - ${student.stream}` : '';
+                studentListHtml += `<li class="text-sm"><strong>${student.name}</strong> (Roll: ${rollNo}${stream})</li>`;
             });
             
             studentListHtml += `</ul></div></div>`;
@@ -2223,14 +2665,20 @@ function deactivateClassBatch() {
             }).then((result) => {
                 if (!result.isConfirmed) return;
 
-                const btn = document.getElementById('deactivateClassBatchBtn');
-                const originalText = btn.innerText;
-                btn.disabled = true;
-                btn.innerText = 'Processing...';
+                // Show loading state
+                Swal.fire({
+                    title: 'Processing...',
+                    text: 'Deactivating students',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
 
                 const formData = new FormData();
                 formData.append('class', classVal);
                 formData.append('batch', batchVal);
+                formData.append('stream', streamVal);
 
                 fetch('deactivate_class_batch.php', {
                     method: 'POST',
@@ -2265,10 +2713,6 @@ function deactivateClassBatch() {
                             title: 'Error',
                             text: 'An unexpected error occurred.'
                         });
-                    })
-                    .finally(() => {
-                        btn.disabled = false;
-                        btn.innerText = originalText;
                     });
             });
         })
@@ -2336,6 +2780,56 @@ function collectFeeData() {
     return Object.keys(feeData).length > 0 ? JSON.stringify(feeData) : null;
 }
 
+// Advanced Filters Functions
+function toggleAdvancedFilters() {
+    const panel = document.getElementById('advancedFiltersPanel');
+    panel.classList.toggle('hidden');
+}
+
+function clearAllFilters() {
+    // Reset all filter selects
+    document.getElementById('classFilter').value = '';
+    document.getElementById('batchFilter').value = '';
+    document.getElementById('streamFilter').value = '';
+    document.getElementById('statusFilter').value = '';
+    document.getElementById('districtFilter').value = '';
+    document.getElementById('religionFilter').value = '';
+    document.getElementById('communityFilter').value = '';
+    document.getElementById('genderFilter').value = '';
+    document.getElementById('nationalityFilter').value = '';
+    document.getElementById('percentageFilter').value = '';
+    document.getElementById('balanceFilter').value = '';
+    document.getElementById('advanceFilter').value = '';
+    
+    // Trigger redraw
+    table.draw();
+    updateActiveFilterCount();
+}
+
+function updateActiveFilterCount() {
+    const filters = [
+        'classFilter', 'batchFilter', 'streamFilter', 'statusFilter', 'districtFilter',
+        'religionFilter', 'communityFilter', 'genderFilter', 'nationalityFilter',
+        'percentageFilter', 'balanceFilter', 'advanceFilter'
+    ];
+    
+    let count = 0;
+    filters.forEach(id => {
+        const elem = document.getElementById(id);
+        if (elem && elem.value !== '') count++;
+    });
+    
+    const badge = document.getElementById('activeFiltersCount');
+    if (badge) {
+        if (count > 0) {
+            badge.textContent = count;
+            badge.classList.remove('hidden');
+        } else {
+            badge.classList.add('hidden');
+        }
+    }
+}
+
 // Populate fees in edit modal
 function populateFeesInModal(feesJson) {
     const feeInputs = document.querySelectorAll('.fee-input');
@@ -2353,4 +2847,538 @@ function populateFeesInModal(feesJson) {
         const feeName = input.getAttribute('data-fee-name');
         input.value = feesData[feeName] || '';
     });
+}
+
+// Setup payment checkbox listeners
+function setupPaymentCheckboxListeners() {
+    // Select all checkbox
+    $('#selectAllPayments').off('change').on('change', function() {
+        const isChecked = $(this).prop('checked');
+        $('.payment-select-cb').prop('checked', isChecked);
+        togglePrintReceiptButton();
+    });
+    
+    // Individual checkboxes
+    $('.payment-select-cb').off('change').on('change', function() {
+        const totalCheckboxes = $('.payment-select-cb').length;
+        const checkedCheckboxes = $('.payment-select-cb:checked').length;
+        $('#selectAllPayments').prop('checked', totalCheckboxes === checkedCheckboxes);
+        togglePrintReceiptButton();
+    });
+}
+
+function togglePrintReceiptButton() {
+    const checkedCount = $('.payment-select-cb:checked').length;
+    const btn = $('#printSelectedReceiptBtn');
+    if (checkedCount > 0) {
+        btn.removeClass('hidden');
+        btn.text(`🖨️ Print Receipt (${checkedCount} selected)`);
+    } else {
+        btn.addClass('hidden');
+    }
+}
+
+function printSelectedPaymentReceipt() {
+    const selected = $('.payment-select-cb:checked');
+    if (selected.length === 0) {
+        Swal.fire('No Selection', 'Please select at least one payment to print receipt.', 'info');
+        return;
+    }
+    
+    // Get selected payment data
+    const payments = [];
+    selected.each(function() {
+        const paymentData = $(this).data('payment');
+        if (paymentData) {
+            payments.push(paymentData);
+        }
+    });
+    
+    if (payments.length === 0) {
+        Swal.fire('Error', 'No payment data found for selected items.', 'error');
+        return;
+    }
+    
+    // Get current student data from modal
+    const studentData = {
+        name: currentViewStudent?.name || 'Student',
+        student_id: currentViewStudent?.id || 'N/A',
+        class_name: currentViewStudent?.class_name || currentViewStudent?.class || '',
+        batch_name: currentViewStudent?.batch_name || currentViewStudent?.batch || ''
+    };
+    
+    // Calculate totals
+    let totalAmount = 0;
+    const distribution = [];
+    
+    payments.forEach(p => {
+        const amt = Number(p.amount) || 0;
+        const type = (p.transaction_type || '').toLowerCase();
+        
+        // Only include debit (payments received) in receipt
+        if (type === 'debit') {
+            totalAmount += amt;
+            distribution.push({
+                month: p.date ? p.date.split(' ')[0] : '-',
+                fee_category: p.category || 'Payment',
+                amount_paid: amt
+            });
+        }
+    });
+    
+    if (totalAmount === 0) {
+        Swal.fire('No Payments', 'Selected items contain no payment records (debits only).', 'info');
+        return;
+    }
+    
+    // Build receipt data
+    const receiptData = {
+        payment_id: payments[0].id || 'N/A',
+        amount: totalAmount,
+        fee_category: payments.length > 1 ? 'Multiple Payments' : (payments[0].category || 'Payment'),
+        payment_mode: 'Cash',
+        payment_date: payments[0].date || new Date().toISOString(),
+        student_name: studentData.name,
+        class_name: studentData.class_name,
+        batch_name: studentData.batch_name,
+        org_name: currentViewStudent?.org_name || 'Educational Institution',
+        org_logo: currentViewStudent?.org_logo || '',
+        payment_distribution: distribution,
+        remaining_months: []
+    };
+    
+    generateReceipt(receiptData, studentData, []);
+}
+
+// Generate printable receipt
+function generateReceipt(paymentData, studentData, remainingMonths) {
+    console.log('generateReceipt called with:', { paymentData, studentData, remainingMonths });
+    
+    // Show loading indicator
+    Swal.fire({
+        title: 'Generating Receipt...',
+        text: 'Please wait',
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+    
+    setTimeout(() => {
+        const receiptWindow = window.open('', '_blank', 'width=800,height=600');
+        
+        if (!receiptWindow) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Popup Blocked!',
+                text: 'Please allow popups for this site to generate the receipt.',
+                confirmButtonColor: '#dc2626'
+            });
+            return;
+        }
+        
+        Swal.close();
+    
+    // Format date
+    const formatDate = (dateStr) => {
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('en-IN', { 
+            day: '2-digit', 
+            month: 'short', 
+            year: 'numeric' 
+        });
+    };
+    
+    // Format currency
+    const formatCurrency = (amount) => {
+        return '₹' + parseFloat(amount).toFixed(2);
+    };
+    
+    // Build payment distribution table (detailed rows per fee month and advance)
+    let distributionHTML = '';
+    const paymentDist = paymentData.payment_distribution ? [...paymentData.payment_distribution] : [];
+    // If advance was used to cover part of payment, show it as an adjustment line
+    if (paymentData.advance_deducted && Number(paymentData.advance_deducted) > 0) {
+        paymentDist.push({
+            month: '-',
+            fee_category: 'Advance adjustment',
+            amount_paid: -Number(paymentData.advance_deducted)
+        });
+    }
+    const feeTotal = paymentDist
+        .filter(item => !(String(item.fee_category || '').toLowerCase().includes('advance')) && item.month !== 'Advance')
+        .reduce((sum, item) => sum + Number(item.amount_paid || 0), 0);
+    const advanceTotal = paymentDist
+        .filter(item => String(item.fee_category || '').toLowerCase().includes('advance') || item.month === 'Advance')
+        .reduce((sum, item) => sum + Number(item.amount_paid || 0), 0);
+    const totalPaid = (Number(paymentData.amount) || 0) || (feeTotal + advanceTotal);
+    const advanceDeducted = Number(paymentData.advance_deducted || 0);
+    const netCashPaid = Math.max(0, totalPaid - advanceDeducted);
+
+    if (paymentDist.length > 0 || feeTotal > 0 || advanceTotal > 0) {
+        distributionHTML = `
+            <div style="margin-bottom: 20px;">
+                <h3 style="font-size: 14px; font-weight: bold; margin-bottom: 10px; border-bottom: 2px solid #333; padding-bottom: 5px;">
+                    Payment Distribution
+                </h3>
+                <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                    <thead>
+                        <tr style="background-color: #f0f0f0;">
+                            <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Month</th>
+                            <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Fee Category</th>
+                            <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">Amount Paid</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${paymentDist.map(item => `
+                            <tr>
+                                <td style=\"border: 1px solid #ddd; padding: 8px;\">${item.month}</td>
+                                <td style=\"border: 1px solid #ddd; padding: 8px;\">${item.fee_category}</td>
+                                <td style=\"border: 1px solid #ddd; padding: 8px; text-align: right;\">${formatCurrency(item.amount_paid)}</td>
+                            </tr>
+                        `).join('')}
+                        ${paymentDist.length === 0 && feeTotal > 0 ? `
+                            <tr>
+                                <td style=\"border: 1px solid #ddd; padding: 8px;\">Fee payment</td>
+                                <td style=\"border: 1px solid #ddd; padding: 8px;\">–</td>
+                                <td style=\"border: 1px solid #ddd; padding: 8px; text-align: right;\">${formatCurrency(feeTotal)}</td>
+                            </tr>` : ''}
+                        ${paymentDist.length === 0 && advanceTotal > 0 ? `
+                            <tr>
+                                <td style=\"border: 1px solid #ddd; padding: 8px;\">Advance saved</td>
+                                <td style=\"border: 1px solid #ddd; padding: 8px;\">–</td>
+                                <td style=\"border: 1px solid #ddd; padding: 8px; text-align: right;\">${formatCurrency(advanceTotal)}</td>
+                            </tr>` : ''}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+    
+    // Build remaining balance table
+    let remainingHTML = '';
+    if (remainingMonths && remainingMonths.length > 0) {
+        remainingHTML = `
+            <div style="margin-bottom: 20px;">
+                <h3 style="font-size: 14px; font-weight: bold; margin-bottom: 10px; border-bottom: 2px solid #333; padding-bottom: 5px;">
+                    Remaining Pending Fees
+                </h3>
+                <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                    <thead>
+                        <tr style="background-color: #f0f0f0;">
+                            <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Month</th>
+                            <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Fee Category</th>
+                            <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">Original Fee</th>
+                            <th style="border: 1px solid #ddd; padding: 8px; text-align: right;">Pending Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        remainingMonths.forEach(item => {
+            remainingHTML += `
+                        <tr>
+                            <td style="border: 1px solid #ddd; padding: 8px;">${item.month}</td>
+                            <td style="border: 1px solid #ddd; padding: 8px;">${item.fee_category}</td>
+                            <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${formatCurrency(item.original_fee)}</td>
+                            <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${formatCurrency(item.remaining)}</td>
+                        </tr>
+            `;
+        });
+        
+        remainingHTML += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+    } else {
+        remainingHTML = `
+            <div style="padding: 15px; background-color: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px; color: #155724; font-size: 13px; margin-bottom: 20px;">
+                ✓ All pending fees have been cleared for this fee category.
+            </div>
+        `;
+    }
+    
+    // Get organization name and logo from payment data
+    const orgName = paymentData.org_name || 'Educational Institution';
+    const orgLogo = paymentData.org_logo || '';
+    
+    const receiptHTML = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Payment Receipt - ${studentData.name}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 15mm;
+        }
+        
+        @media print {
+            body {
+                width: 210mm;
+                height: 297mm;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #fff;
+            color: #333;
+        }
+        
+        .receipt-container {
+            max-width: 800px;
+            margin: 0 auto;
+            border: 2px solid #333;
+            padding: 30px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 3px double #333;
+            padding-bottom: 15px;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+        
+        .header h2 {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
+        .receipt-number {
+            text-align: right;
+            font-size: 12px;
+            margin-bottom: 20px;
+            color: #666;
+        }
+        
+        .info-section {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 25px;
+            gap: 20px;
+        }
+        
+        .info-block {
+            flex: 1;
+        }
+        
+        .info-block h3 {
+            font-size: 14px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 5px;
+        }
+        
+        .info-row {
+            display: flex;
+            margin-bottom: 5px;
+            font-size: 12px;
+        }
+        
+        .info-label {
+            font-weight: bold;
+            width: 120px;
+        }
+        
+        .info-value {
+            flex: 1;
+        }
+        
+        .payment-summary {
+            background-color: #f9f9f9;
+            border: 2px solid #333;
+            padding: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .payment-summary h3 {
+            font-size: 16px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .payment-amount {
+            text-align: center;
+            font-size: 28px;
+            font-weight: bold;
+            color: #2e7d32;
+            margin: 10px 0;
+        }
+        
+        .signature-section {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 50px;
+            padding-top: 20px;
+        }
+        
+        .signature-block {
+            text-align: center;
+            width: 200px;
+        }
+        
+        .signature-line {
+            border-top: 1px solid #333;
+            margin-top: 60px;
+            padding-top: 5px;
+            font-size: 12px;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid #ddd;
+            font-size: 11px;
+            color: #666;
+        }
+        
+        .button-container {
+            text-align: center;
+            margin-top: 20px;
+            gap: 10px;
+            display: flex;
+            justify-content: center;
+        }
+        
+        button {
+            padding: 10px 25px;
+            font-size: 14px;
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        
+        .print-btn {
+            background-color: #2196F3;
+            color: white;
+        }
+        
+        .print-btn:hover {
+            background-color: #1976D2;
+        }
+        
+        .close-btn {
+            background-color: #f44336;
+            color: white;
+        }
+        
+        .close-btn:hover {
+            background-color: #da190b;
+        }
+    </style>
+</head>
+<body>
+    <div class="receipt-container">
+        <div class="header">
+            ${orgLogo ? `<img src="${orgLogo}" alt="Logo" style="max-width: 80px; max-height: 80px; margin-bottom: 10px;">` : ''}
+            <h1>${orgName}</h1>
+            <h2>Fee Payment Receipt</h2>
+        </div>
+        
+        <div class="receipt-number">
+            Receipt No: ${paymentData.payment_id || 'N/A'} | Date: ${formatDate(paymentData.payment_date || new Date())}
+        </div>
+        
+        <div class="info-section">
+            <div class="info-block">
+                <h3>Student Information</h3>
+                <div class="info-row">
+                    <span class="info-label">Student Name:</span>
+                    <span class="info-value">${studentData.name}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Student ID:</span>
+                    <span class="info-value">${studentData.student_id}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Class:</span>
+                    <span class="info-value">${studentData.class_name || 'N/A'}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Batch:</span>
+                    <span class="info-value">${studentData.batch_name || 'N/A'}</span>
+                </div>
+            </div>
+            
+            <div class="info-block">
+                <h3>Payment Information</h3>
+                <div class="info-row">
+                    <span class="info-label">Fee Category:</span>
+                    <span class="info-value">${paymentData.fee_category || 'N/A'}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Payment Mode:</span>
+                    <span class="info-value">${paymentData.payment_mode || 'Cash'}</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label">Received By:</span>
+                    <span class="info-value">${paymentData.received_by || 'Admin'}</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="payment-summary">
+            <h3>Amount Paid</h3>
+            <div class="payment-amount">${formatCurrency(netCashPaid)}</div>
+            ${advanceDeducted > 0 ? `<div style="margin-top: 6px; font-size: 12px; color: #444; text-align: center;">Includes advance adjustment of ${formatCurrency(advanceDeducted)}</div>` : ''}
+        </div>
+        
+        ${distributionHTML}
+        ${remainingHTML}
+        
+        <div class="signature-section">
+            <div class="signature-block">
+                <div class="signature-line">Student/Parent Signature</div>
+            </div>
+            <div class="signature-block">
+                <div class="signature-line">Authorized Signature</div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            This is a computer-generated receipt. For any queries, please contact the administration.
+        </div>
+        
+        <div class="button-container no-print">
+            <button class="print-btn" onclick="window.print()">🖨️ Print Receipt</button>
+            <button class="close-btn" onclick="window.close()">✖ Close</button>
+        </div>
+    </div>
+    
+    <script>
+        // Auto-print after a short delay
+        setTimeout(() => {
+            window.print();
+        }, 500);
+    </script>
+</body>
+</html>
+    `;
+    
+    receiptWindow.document.write(receiptHTML);
+    receiptWindow.document.close();
+    }, 300); // End setTimeout
 }
