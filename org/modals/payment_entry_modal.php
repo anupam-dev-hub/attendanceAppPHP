@@ -24,12 +24,10 @@
 
                                 <div class="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700">Transaction Type</label>
+                                        <label class="block text-sm font-medium text-gray-700">Payment Type</label>
                                         <select name="transaction_type" id="paymentTransactionType" required class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm rounded-md">
-                                            <option value="salary">Salary</option>
-                                            <option value="bonus">Bonus</option>
-                                            <option value="advance">Advance</option>
-                                            <option value="deduction">Deduction</option>
+                                            <option value="debit">Payment (Debit)</option>
+                                            <option value="credit">Deduction/Owed (Credit)</option>
                                         </select>
                                     </div>
                                     

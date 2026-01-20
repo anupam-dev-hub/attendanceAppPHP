@@ -60,9 +60,19 @@
                                 <label>Sex</label>
                                 <select name="sex" id="studentSex" onchange="toggleSexOther()">
                                     <option value="">Select Sex</option>
-                                    <option value="Male">Male</option>
-                                    <option value="Female">Female</option>
-                                    <option value="Other">Other (Specify)</option>
+                                    <?php
+                                    $result = $conn->query("SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='students' AND TABLE_SCHEMA=DATABASE() AND COLUMN_NAME='sex'");
+                                    if ($result && $row = $result->fetch_assoc()) {
+                                        $type = $row['COLUMN_TYPE'];
+                                        preg_match("/enum\((.*)\)/i", $type, $matches);
+                                        if (isset($matches[1])) {
+                                            $values = str_getcsv($matches[1], ",", "'");
+                                            foreach ($values as $val) {
+                                                echo "<option value='" . htmlspecialchars($val) . "'>" . htmlspecialchars($val) . "</option>";
+                                            }
+                                        }
+                                    }
+                                    ?>
                                 </select>
                             </div>
                             <div class="form-field-group" id="sexOtherGroup" style="display: none;">
@@ -89,10 +99,19 @@
                                 <label>Religion</label>
                                 <select name="religion" id="studentReligion" onchange="toggleReligionOther()">
                                     <option value="">Select Religion</option>
-                                    <option value="Hindu">Hindu</option>
-                                    <option value="Muslim">Muslim</option>
-                                    <option value="Christian">Christian</option>
-                                    <option value="Other">Other (Specify)</option>
+                                    <?php
+                                    $result = $conn->query("SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='students' AND TABLE_SCHEMA=DATABASE() AND COLUMN_NAME='religion'");
+                                    if ($result && $row = $result->fetch_assoc()) {
+                                        $type = $row['COLUMN_TYPE'];
+                                        preg_match("/enum\((.*)\)/i", $type, $matches);
+                                        if (isset($matches[1])) {
+                                            $values = str_getcsv($matches[1], ",", "'");
+                                            foreach ($values as $val) {
+                                                echo "<option value='" . htmlspecialchars($val) . "'>" . htmlspecialchars($val) . "</option>";
+                                            }
+                                        }
+                                    }
+                                    ?>
                                 </select>
                             </div>
                             <div class="form-field-group" id="religionOtherGroup" style="display: none;">
@@ -103,12 +122,19 @@
                                 <label>Community</label>
                                 <select name="community" id="studentCommunity" onchange="toggleCommunityOther()">
                                     <option value="">Select Community</option>
-                                    <option value="ST">ST</option>
-                                    <option value="SC">SC</option>
-                                    <option value="SC(A)">SC(A)</option>
-                                    <option value="BC">BC</option>
-                                    <option value="General">General</option>
-                                    <option value="Other">Other (Specify)</option>
+                                    <?php
+                                    $result = $conn->query("SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='students' AND TABLE_SCHEMA=DATABASE() AND COLUMN_NAME='community'");
+                                    if ($result && $row = $result->fetch_assoc()) {
+                                        $type = $row['COLUMN_TYPE'];
+                                        preg_match("/enum\((.*)\)/i", $type, $matches);
+                                        if (isset($matches[1])) {
+                                            $values = str_getcsv($matches[1], ",", "'");
+                                            foreach ($values as $val) {
+                                                echo "<option value='" . htmlspecialchars($val) . "'>" . htmlspecialchars($val) . "</option>";
+                                            }
+                                        }
+                                    }
+                                    ?>
                                 </select>
                             </div>
                             <div class="form-field-group" id="communityOtherGroup" style="display: none;">
@@ -189,11 +215,41 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
                             <div class="form-field-group">
                                 <label>Class</label>
-                                <input type="text" name="class" id="studentClass" required>
+                                <select name="class" id="studentClass" required>
+                                    <option value="">Select Class</option>
+                                    <?php
+                                    $result = $conn->query("SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='students' AND TABLE_SCHEMA=DATABASE() AND COLUMN_NAME='class'");
+                                    if ($result && $row = $result->fetch_assoc()) {
+                                        $type = $row['COLUMN_TYPE'];
+                                        preg_match("/enum\((.*)\)/i", $type, $matches);
+                                        if (isset($matches[1])) {
+                                            $values = str_getcsv($matches[1], ",", "'");
+                                            foreach ($values as $val) {
+                                                echo "<option value='" . htmlspecialchars($val) . "'>" . htmlspecialchars($val) . "</option>";
+                                            }
+                                        }
+                                    }
+                                    ?>
+                                </select>
                             </div>
                             <div class="form-field-group">
                                 <label>Stream</label>
-                                <input type="text" name="stream" id="studentStream" placeholder="e.g., Science, Commerce, Arts">
+                                <select name="stream" id="studentStream">
+                                    <option value="">Select Stream</option>
+                                    <?php
+                                    $result = $conn->query("SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME='students' AND TABLE_SCHEMA=DATABASE() AND COLUMN_NAME='stream'");
+                                    if ($result && $row = $result->fetch_assoc()) {
+                                        $type = $row['COLUMN_TYPE'];
+                                        preg_match("/enum\((.*)\)/i", $type, $matches);
+                                        if (isset($matches[1])) {
+                                            $values = str_getcsv($matches[1], ",", "'");
+                                            foreach ($values as $val) {
+                                                echo "<option value='" . htmlspecialchars($val) . "'>" . htmlspecialchars($val) . "</option>";
+                                            }
+                                        }
+                                    }
+                                    ?>
+                                </select>
                             </div>
                             <div class="form-field-group">
                                 <label>Batch</label>

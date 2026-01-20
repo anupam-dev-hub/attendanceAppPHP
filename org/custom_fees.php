@@ -17,13 +17,16 @@ if (!isSubscribed($org_id)) {
     exit;
 }
 
-// Fetch distinct classes and batches for filters
+// Fetch distinct classes, batches, and streams for filters
 $classes = [];
 $batches = [];
+$streams = [];
 $qc = $conn->query("SELECT DISTINCT class FROM students WHERE org_id = $org_id AND class IS NOT NULL AND class != '' ORDER BY class ASC");
 while ($row = $qc->fetch_assoc()) { $classes[] = $row['class']; }
 $qb = $conn->query("SELECT DISTINCT batch FROM students WHERE org_id = $org_id AND batch IS NOT NULL AND batch != '' ORDER BY batch DESC");
 while ($row = $qb->fetch_assoc()) { $batches[] = $row['batch']; }
+$qs = $conn->query("SELECT DISTINCT stream FROM students WHERE org_id = $org_id AND stream IS NOT NULL AND stream != '' ORDER BY stream ASC");
+while ($row = $qs->fetch_assoc()) { $streams[] = $row['stream']; }
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -103,6 +106,15 @@ while ($row = $qb->fetch_assoc()) { $batches[] = $row['batch']; }
                         <?php endforeach; ?>
                     </select>
                 </div>
+                <div class="flex-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Stream</label>
+                    <select id="filter_stream" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500">
+                        <option value="">All</option>
+                        <?php foreach ($streams as $s): ?>
+                            <option value="<?php echo htmlspecialchars($s); ?>"><?php echo htmlspecialchars($s); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
                 <div>
                     <button id="applyFilter" class="bg-gray-800 hover:bg-gray-900 text-white font-medium py-2 px-4 rounded-lg">Apply Filter</button>
                 </div>
@@ -135,7 +147,7 @@ function renderStudents(list) {
                 <input type="checkbox" class="stuChk h-4 w-4" value="${s.id}">
                 <div>
                     <div class="font-medium text-gray-900">${escapeHtml(s.name)}${s.roll_number ? ` (Roll: ${escapeHtml(s.roll_number)})` : ''}</div>
-                    <div class="text-xs text-gray-500">Class: ${escapeHtml(s.class || '-')}, Batch: ${escapeHtml(s.batch || '-')}</div>
+                    <div class="text-xs text-gray-500">Class: ${escapeHtml(s.class || '-')}, Batch: ${escapeHtml(s.batch || '-')}, Stream: ${escapeHtml(s.stream || '-')}</div>
                 </div>
             </div>
             <span class="text-xs text-gray-400">ID: ${s.id}</span>
@@ -151,10 +163,15 @@ function escapeHtml(str){
 async function loadStudents() {
     const cls = document.getElementById('filter_class').value.trim();
     const batch = document.getElementById('filter_batch').value.trim();
+    const stream = document.getElementById('filter_stream').value.trim();
     try {
         let url;
-        if (cls && batch) {
-            url = `get_students_by_class_batch.php?class=${encodeURIComponent(cls)}&batch=${encodeURIComponent(batch)}`;
+        if (cls || batch || stream) {
+            const params = new URLSearchParams();
+            if (cls) params.append('class', cls);
+            if (batch) params.append('batch', batch);
+            if (stream) params.append('stream', stream);
+            url = `get_students_by_class_batch.php?${params.toString()}`;
         } else {
             // Fallback: fetch all students when no filter applied
             url = 'api/get_payment_history.php?all_students=1'; // reuse endpoint to list students if supported
@@ -183,7 +200,8 @@ async function loadStudents() {
 document.getElementById('applyFilter').addEventListener('click', async () => {
     const cls = document.getElementById('filter_class').value.trim();
     const batch = document.getElementById('filter_batch').value.trim();
-    if (!cls && !batch) {
+    const stream = document.getElementById('filter_stream').value.trim();
+    if (!cls && !batch && !stream) {
         // Load all students for org via minimal API we define below
         try {
             const res = await fetch('api/get_students_list.php');
@@ -196,7 +214,11 @@ document.getElementById('applyFilter').addEventListener('click', async () => {
         return;
     }
     try {
-        const res = await fetch(`get_students_by_class_batch.php?class=${encodeURIComponent(cls)}&batch=${encodeURIComponent(batch)}`);
+        const params = new URLSearchParams();
+        if (cls) params.append('class', cls);
+        if (batch) params.append('batch', batch);
+        if (stream) params.append('stream', stream);
+        const res = await fetch(`get_students_by_class_batch.php?${params.toString()}`);
         const data = await res.json();
         if (data.success) renderStudents(data.students); else throw new Error('Failed');
     } catch (e) {

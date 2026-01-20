@@ -136,14 +136,14 @@ $(document).ready(function () {
         table.responsive.recalc();
     });
 
-    // Class filter (column 2)
+    // Class filter (column 3)
     $('#classFilter').on('change', function () {
-        table.column(2).search(this.value).draw();
+        table.column(3).search(this.value).draw();
     });
 
-    // Batch filter (column 3)
+    // Batch filter (column 5)
     $('#batchFilter').on('change', function () {
-        table.column(3).search(this.value).draw();
+        table.column(5).search(this.value).draw();
     });
 
     // Status filter (custom search)
@@ -169,13 +169,15 @@ $(document).ready(function () {
                 if (rowStatus !== statusFilter) return false;
             }
             
-            // Get student data from row attributes
+            // Get student data from row attributes (contains all student fields including net_balance)
             var studentDataAttr = $(row).find('.payment-btn').attr('data-student-fee');
             var studentData = null;
             if (studentDataAttr) {
                 try {
                     studentData = JSON.parse(studentDataAttr);
-                } catch(e) {}
+                } catch(e) {
+                    console.error('Error parsing student data:', e);
+                }
             }
             
             // Stream filter
@@ -220,8 +222,8 @@ $(document).ready(function () {
             // Balance filter
             if (balanceFilter !== '' && studentData) {
                 var balance = parseFloat(studentData.net_balance) || 0;
-                if (balanceFilter === 'due' && balance >= 0) return false;
-                if (balanceFilter === 'paid' && balance <= 0) return false;
+                if (balanceFilter === 'due' && balance >= 0) return false;     // Has due = negative balance (< 0), so filter out >= 0
+                if (balanceFilter === 'paid' && balance <= 0) return false;    // Paid extra = positive balance (> 0), so filter out <= 0
                 if (balanceFilter === 'clear' && balance !== 0) return false;
             }
             
@@ -401,7 +403,15 @@ function openEditModal(student) {
     document.getElementById('studentName').value = student.name;
     document.getElementById('studentClass').value = student.class || '';
     document.getElementById('studentStream').value = student.stream || '';
-    document.getElementById('studentBatch').value = student.batch || '2025-2026';
+    // Ensure the existing batch is selectable (older batches)
+    const batchSelect = document.getElementById('studentBatch');
+    const studentBatch = student.batch || '2025-2026';
+    let batchOption = Array.from(batchSelect.options).find(opt => opt.value === studentBatch);
+    if (!batchOption) {
+        batchOption = new Option(studentBatch, studentBatch, true, true);
+        batchSelect.add(batchOption, 0); // prepend so it appears first
+    }
+    batchSelect.value = studentBatch;
     document.getElementById('studentRoll').value = student.roll_number || '';
     document.getElementById('studentPhone').value = student.phone;
     document.getElementById('studentEmail').value = student.email || '';
@@ -443,13 +453,12 @@ function openEditModal(student) {
     
     document.getElementById('studentAdmission').value = student.admission_amount || '0.00';
     
-    // Load fees and populate them
-    loadOrgFees();
-    setTimeout(() => {
+    // Load fees and populate them - wait for loadOrgFees to complete
+    loadOrgFees().then(() => {
         if (student.fees_json) {
             populateFeesInModal(student.fees_json);
         }
-    }, 100);
+    });
     
     document.getElementById('studentIsActive').checked = student.is_active == 1;
     document.getElementById('studentRemark').value = student.remark || '';
@@ -2461,6 +2470,8 @@ function submitAdvancePayment(paymentData) {
                             student_name: data.student_name,
                             class_name: data.class_name,
                             batch_name: data.batch_name,
+                            org_name: data.org_name || 'Educational Institution',
+                            org_logo: data.org_logo || '',
                             payment_distribution: [
                                 {
                                     month: '-',
@@ -2836,16 +2847,23 @@ function populateFeesInModal(feesJson) {
     let feesData = {};
     
     try {
-        if (feesJson && typeof feesJson === 'string') {
+        // Handle both string and object formats
+        if (typeof feesJson === 'string') {
             feesData = JSON.parse(feesJson);
+        } else if (typeof feesJson === 'object' && feesJson !== null) {
+            feesData = feesJson;
         }
     } catch (e) {
         console.error('Error parsing fees JSON:', e);
     }
     
+    console.log('Populating fees with data:', feesData);
+    
     feeInputs.forEach(input => {
         const feeName = input.getAttribute('data-fee-name');
-        input.value = feesData[feeName] || '';
+        const feeValue = feesData[feeName] || '';
+        input.value = feeValue;
+        console.log(`Set fee ${feeName} = ${feeValue}`);
     });
 }
 
@@ -3153,10 +3171,18 @@ function generateReceipt(paymentData, studentData, remainingMonths) {
             padding-bottom: 15px;
         }
         
+        .header-logo {
+            max-width: 100px;
+            max-height: 100px;
+            margin-bottom: 15px;
+            object-fit: contain;
+        }
+        
         .header h1 {
             font-size: 24px;
             margin-bottom: 5px;
             text-transform: uppercase;
+            font-weight: bold;
         }
         
         .header h2 {
@@ -3293,7 +3319,7 @@ function generateReceipt(paymentData, studentData, remainingMonths) {
 <body>
     <div class="receipt-container">
         <div class="header">
-            ${orgLogo ? `<img src="${orgLogo}" alt="Logo" style="max-width: 80px; max-height: 80px; margin-bottom: 10px;">` : ''}
+            ${orgLogo ? `<img src="${orgLogo}" alt="Organization Logo" class="header-logo">` : ''}
             <h1>${orgName}</h1>
             <h2>Fee Payment Receipt</h2>
         </div>

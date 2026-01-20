@@ -3,6 +3,7 @@
 session_start();
 require '../config.php';
 require '../functions.php';
+require_once '../email_config.php';
 
 if (!isAdmin()) {
     redirect('index.php');
@@ -53,10 +54,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-        // Send Email with Credentials
+        // Send Email with Credentials (HTML template)
         $subject = "Welcome to Attendance App - Your Credentials";
-        $message = "Hello $owner,\n\nYour organization has been registered.\n\nLogin Details:\nEmail: $email\nPassword: $raw_password\n\nLogin here: http://localhost/attendanceAppPHP/org/index.php";
-        sendEmail($email, $subject, $message);
+        $templatePath = EMAIL_TEMPLATES_DIR . 'welcome_organization.html';
+        $body = '';
+        
+        // Detect dynamic base URL
+        $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        $baseUrl = $protocol . $host . dirname(dirname($_SERVER['PHP_SELF']));
+        $loginUrl = $baseUrl . '/org/index.php';
+        
+        if (file_exists($templatePath)) {
+            $body = file_get_contents($templatePath);
+            $placeholders = [
+                '{ORG_NAME}' => htmlspecialchars($name, ENT_QUOTES, 'UTF-8'),
+                '{ORG_EMAIL}' => htmlspecialchars($email, ENT_QUOTES, 'UTF-8'),
+                '{TEMP_PASSWORD}' => htmlspecialchars($raw_password, ENT_QUOTES, 'UTF-8'),
+                '{LOGIN_URL}' => $loginUrl,
+                '{SUPPORT_EMAIL}' => SENDER_EMAIL,
+            ];
+            $body = strtr($body, $placeholders);
+        } else {
+            // Fallback plain text
+            $body = "Hello $owner,\n\nYour organization has been registered.\n\nLogin Details:\nEmail: $email\nPassword: $raw_password\n\nLogin here: $loginUrl";
+        }
+
+        sendEmail($email, $subject, $body, ['is_html' => true]);
 
         $success = "Organization added successfully! Credentials sent to email.";
     } else {
@@ -128,6 +152,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <div class="dropdown-content">
                             <a href="settings.php">Payment Settings</a>
                             <a href="contact_settings.php">Contact Details</a>
+                            <a href="subscription_plans.php">Subscription Plans</a>
                         </div>
                     </div>
                     <a href="../logout.php" class="text-white hover:text-red-200 font-medium transition">Logout</a>

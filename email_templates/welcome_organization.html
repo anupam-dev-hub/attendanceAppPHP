@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background-color: #007bff;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px 5px 0 0;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .content {
+            padding: 20px 0;
+        }
+        .footer {
+            border-top: 1px solid #ddd;
+            padding-top: 20px;
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+        }
+        .button {
+            display: inline-block;
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Welcome to Attendance App</h1>
+        </div>
+        <div class="content">
+            <p>Hello {ORG_NAME},</p>
+            <p>Your organization has been successfully registered in our system.</p>
+            
+            <h3>Your Login Credentials:</h3>
+            <p>
+                <strong>Email:</strong> {ORG_EMAIL}<br>
+                <strong>Temporary Password:</strong> {TEMP_PASSWORD}<br>
+            </p>
+            
+            <p>
+                <a href="{LOGIN_URL}" class="button">Login to Your Account</a>
+            </p>
+            
+            <h3>Next Steps:</h3>
+            <ol>
+                <li>Login with your credentials</li>
+                <li>Update your profile</li>
+                <li>Subscribe to a plan</li>
+                <li>Start managing attendance</li>
+            </ol>
+            
+            <p><strong>Need help?</strong> Contact our support team at {SUPPORT_EMAIL}</p>
+        </div>
+        <div class="footer">
+            <p>&copy; 2025 Attendance App. All rights reserved.</p>
+            <p>This is an automated email. Please do not reply.</p>
+        </div>
+    </div>
+</body>
+</html>

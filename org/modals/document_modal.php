@@ -1,5 +1,5 @@
 <!-- org/modals/document_modal.php -->
-<div id="documentModal" class="fixed z-30 inset-0 overflow-y-auto hidden" aria-labelledby="document-modal-title" role="dialog" aria-modal="true">
+<div id="documentModal" class="fixed z-[9999] inset-0 overflow-y-auto hidden" aria-labelledby="document-modal-title" role="dialog" aria-modal="true">
     <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
         <div class="fixed inset-0 bg-gray-900 bg-opacity-90 transition-opacity" aria-hidden="true" onclick="closeDocumentModal()"></div>
         <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>

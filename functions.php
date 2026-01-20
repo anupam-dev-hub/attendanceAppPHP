@@ -1,11 +1,37 @@
 <?php
 // functions.php
 
-function sendEmail($to, $subject, $message) {
-    // Simulate email sending by writing to a log file
+function sendEmail($to, $subject, $message, $options = []) {
+    // Try to use the new email service for Hostinger
+    if (file_exists(__DIR__ . '/email_service.php')) {
+        try {
+            require_once __DIR__ . '/email_service.php';
+            $emailService = new EmailService();
+            $result = $emailService->send($to, $subject, $message, array_merge(['is_html' => false], $options));
+            
+            // Log the email attempt
+            $logFile = __DIR__ . '/email.log';
+            $timestamp = date('Y-m-d H:i:s');
+            $status = $result['success'] ? 'SUCCESS' : 'FAILED';
+            $details = $result['success'] ? '' : ' - Error: ' . $result['error'];
+            $logEntry = "[$timestamp] [$status] To: $to | Subject: $subject{$details}" . PHP_EOL;
+            file_put_contents($logFile, $logEntry, FILE_APPEND);
+            
+            return $result['success'];
+        } catch (Exception $e) {
+            // Fallback to logging if service fails
+            $logFile = __DIR__ . '/email.log';
+            $timestamp = date('Y-m-d H:i:s');
+            $logEntry = "[$timestamp] [ERROR] Exception: " . $e->getMessage() . " | To: $to | Subject: $subject" . PHP_EOL;
+            file_put_contents($logFile, $logEntry, FILE_APPEND);
+            return false;
+        }
+    }
+    
+    // Fallback: Log only if service not available
     $logFile = __DIR__ . '/email.log';
     $timestamp = date('Y-m-d H:i:s');
-    $logEntry = "[$timestamp] To: $to | Subject: $subject | Message: $message" . PHP_EOL . str_repeat('-', 50) . PHP_EOL;
+    $logEntry = "[$timestamp] [LOG] To: $to | Subject: $subject | Message: $message" . PHP_EOL . str_repeat('-', 50) . PHP_EOL;
     file_put_contents($logFile, $logEntry, FILE_APPEND);
     return true;
 }

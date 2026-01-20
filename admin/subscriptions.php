@@ -141,6 +141,7 @@ $history = $conn->query("SELECT s.*, o.name as org_name
                         <div class="dropdown-content">
                             <a href="settings.php">Payment Settings</a>
                             <a href="contact_settings.php">Contact Details</a>
+                            <a href="subscription_plans.php">Subscription Plans</a>
                         </div>
                     </div>
                     <a href="../logout.php" class="text-white hover:text-red-200 font-medium transition">Logout</a>
@@ -206,7 +207,7 @@ $history = $conn->query("SELECT s.*, o.name as org_name
             <?php endif; ?>
         </div>
 
-        <!-- Modal -->
+        <!-- Modal for Payment Proof -->
         <div id="proofModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
             <div class="relative top-20 mx-auto p-5 border w-full max-w-lg shadow-lg rounded-md bg-white">
                 <div class="mt-3 text-center">
@@ -232,6 +233,21 @@ $history = $conn->query("SELECT s.*, o.name as org_name
             </div>
         </div>
 
+        <!-- Modal for History Proof View -->
+        <div id="proofViewModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50 flex items-center justify-center">
+            <div class="relative mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+                <div class="mt-3 text-center">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900">Payment Proof Screenshot</h3>
+                        <span class="cursor-pointer text-gray-400 hover:text-gray-600 text-2xl font-bold" onclick="closeProofModal()">&times;</span>
+                    </div>
+                    <div class="mt-2 px-7 py-3">
+                        <img id="proofViewImg" src="" class="max-w-full max-h-96 mx-auto border border-gray-200 rounded">
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <script>
             function openModal(imgSrc, subId) {
                 document.getElementById('modalImg').src = imgSrc;
@@ -243,11 +259,24 @@ $history = $conn->query("SELECT s.*, o.name as org_name
                 document.getElementById('proofModal').classList.add('hidden');
             }
 
+            function openProofModal(imgSrc) {
+                document.getElementById('proofViewImg').src = imgSrc;
+                document.getElementById('proofViewModal').classList.remove('hidden');
+            }
+
+            function closeProofModal() {
+                document.getElementById('proofViewModal').classList.add('hidden');
+            }
+
             // Close modal if clicked outside
             window.onclick = function(event) {
                 const modal = document.getElementById('proofModal');
+                const viewModal = document.getElementById('proofViewModal');
                 if (event.target == modal) {
                     closeModal();
+                }
+                if (event.target == viewModal) {
+                    closeProofModal();
                 }
             }
         </script>
@@ -261,21 +290,50 @@ $history = $conn->query("SELECT s.*, o.name as org_name
                             <tr>
                                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Org Name</th>
                                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plan</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Days Left</th>
                                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
-                            <?php while($row = $history->fetch_assoc()): ?>
+                            <?php while($row = $history->fetch_assoc()): 
+                                // Calculate days left
+                                $daysLeft = '';
+                                if ($row['status'] === 'active' && !empty($row['to_date'])) {
+                                    $today = new DateTime();
+                                    $toDate = new DateTime($row['to_date']);
+                                    $diff = $toDate->diff($today);
+                                    if ($toDate > $today) {
+                                        $daysLeft = $diff->days . ' days';
+                                    } else {
+                                        $daysLeft = 'Expired';
+                                    }
+                                } else {
+                                    $daysLeft = '—';
+                                }
+                            ?>
                                 <tr class="hover:bg-gray-50 transition">
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"><?php echo htmlspecialchars($row['org_name']); ?></td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><?php echo $row['plan_months']; ?> Months</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-semibold">₹<?php echo number_format($row['amount'], 2); ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><?php echo $daysLeft; ?></td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?php echo ($row['status']=='active') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'; ?>">
                                             <?php echo strtoupper($row['status']); ?>
                                         </span>
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><?php echo $row['created_at']; ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><?php echo date('d M Y', strtotime($row['created_at'])); ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                        <?php if (!empty($row['payment_proof'])): ?>
+                                            <button class="text-blue-600 hover:text-blue-800 font-semibold" onclick="openProofModal('<?php echo htmlspecialchars($row['payment_proof']); ?>')">
+                                                More Info
+                                            </button>
+                                        <?php else: ?>
+                                            <span class="text-gray-400">—</span>
+                                        <?php endif; ?>
+                                    </td>
                                 </tr>
                             <?php endwhile; ?>
                         </tbody>

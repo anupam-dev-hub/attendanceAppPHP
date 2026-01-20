@@ -22,11 +22,26 @@ class StudentStats {
         $result = $stmt->get_result();
         
         while ($row = $result->fetch_assoc()) {
+            // Check if both in_time and out_time are blank (NULL or empty)
+            $in_time = $row['in_time'];
+            $out_time = $row['out_time'];
+            
+            // Determine status: Absent if no in/out times, Present if at least one time exists
+            if (empty($in_time) && empty($out_time)) {
+                $status = 'Absent';
+                $in_display = '-';
+                $out_display = '-';
+            } else {
+                $status = 'Present';
+                $in_display = $in_time ? date('h:i A', strtotime($in_time)) : '-';
+                $out_display = $out_time ? date('h:i A', strtotime($out_time)) : '-';
+            }
+            
             $history[] = [
                 'date' => date('d M Y', strtotime($row['date'])),
-                'in_time' => $row['in_time'] ? date('h:i A', strtotime($row['in_time'])) : '-',
-                'out_time' => $row['out_time'] ? date('h:i A', strtotime($row['out_time'])) : '-',
-                'status' => 'Present' // Assuming record existence means present
+                'in_time' => $in_display,
+                'out_time' => $out_display,
+                'status' => $status
             ];
         }
         

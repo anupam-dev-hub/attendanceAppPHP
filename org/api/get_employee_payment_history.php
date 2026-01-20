@@ -43,15 +43,15 @@ $stmt->execute();
 $result = $stmt->get_result();
 
 $payments = [];
-$total_paid = 0;
-$total_deductions = 0;
+$total_debits = 0; // Payments made to employee
+$total_credits = 0; // Amounts owed/deductions
 
 while ($row = $result->fetch_assoc()) {
-    // Calculate totals
-    if (in_array($row['transaction_type'], ['salary', 'bonus', 'advance'])) {
-        $total_paid += $row['amount'];
-    } elseif ($row['transaction_type'] === 'deduction') {
-        $total_deductions += $row['amount'];
+    // Normalize legacy values (salary/bonus/advance = debit, deduction = credit)
+    if ($row['transaction_type'] === 'credit' || $row['transaction_type'] === 'deduction') {
+        $total_credits += $row['amount'];
+    } else {
+        $total_debits += $row['amount'];
     }
     
     $payments[] = [
@@ -68,9 +68,13 @@ while ($row = $result->fetch_assoc()) {
 echo json_encode([
     'success' => true,
     'payments' => $payments,
-    'total_paid' => $total_paid,
-    'total_deductions' => $total_deductions,
-    'net_payment' => $total_paid - $total_deductions
+    'total_debits' => $total_debits,
+    'total_credits' => $total_credits,
+    'net_balance' => $total_credits - $total_debits, // Credits (owed) minus debits (paid)
+    // Legacy keys for backward compatibility
+    'total_paid' => $total_debits,
+    'total_deductions' => $total_credits,
+    'net_payment' => $total_debits - $total_credits
 ]);
 
 $stmt->close();

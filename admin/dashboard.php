@@ -68,6 +68,7 @@ $result = $conn->query($sql);
                             </span>
                         <?php endif; ?>
                     </a>
+                    <a href="email_tester.php" class="text-white hover:text-blue-100 font-medium transition">Email Tester</a>
                     <div class="dropdown">
                         <span class="dropdown-btn text-white hover:text-blue-100 font-medium transition">
                             Settings ▾
@@ -75,6 +76,7 @@ $result = $conn->query($sql);
                         <div class="dropdown-content">
                             <a href="settings.php">Payment Settings</a>
                             <a href="contact_settings.php">Contact Details</a>
+                            <a href="subscription_plans.php">Subscription Plans</a>
                         </div>
                     </div>
                     <a href="../logout.php" class="text-white hover:text-red-200 font-medium transition">Logout</a>

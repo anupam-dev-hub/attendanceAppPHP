@@ -73,15 +73,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Get organization details
     $org_name = 'Educational Institution';
     $org_logo = '';
-    try {
-        $org_result = $conn->query("SELECT name, logo FROM organizations WHERE id = {$_SESSION['user_id']}");
-        if ($org_result && $org_result->num_rows > 0) {
-            $org_data = $org_result->fetch_assoc();
-            $org_name = $org_data['name'] ?? 'Educational Institution';
-            $org_logo = $org_data['logo'] ?? '';
-        }
-    } catch (Exception $e) {
-        // Silently fail
+    $org_result = $conn->query("SELECT name, logo FROM organizations WHERE id = {$_SESSION['user_id']}");
+    if ($org_result && $org_result->num_rows > 0) {
+        $org_data = $org_result->fetch_assoc();
+        $org_name = !empty($org_data['name']) ? $org_data['name'] : 'Educational Institution';
+        $org_logo = !empty($org_data['logo']) ? $org_data['logo'] : '';
     }
     
     // Use class and batch IDs directly if tables don't exist

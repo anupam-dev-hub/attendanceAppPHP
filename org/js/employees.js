@@ -48,7 +48,7 @@ $(document).ready(function () {
     });
 
     // Handle payment button clicks via event delegation
-    $(document).on('click', 'button.payment-btn', function(e) {
+    $(document).on('click', 'button.payment-btn', function (e) {
         e.preventDefault();
         var employeeId = $(this).data('employee-id');
         var employeeName = $(this).data('employee-name');
@@ -58,19 +58,19 @@ $(document).ready(function () {
     // Populate filter dropdowns
     var departments = [];
     var designations = [];
-    
-    table.column(3).data().unique().sort().each(function(d) {
+
+    table.column(3).data().unique().sort().each(function (d) {
         if (d && d !== '-') departments.push(d);
     });
-    table.column(2).data().unique().sort().each(function(d) {
+    table.column(2).data().unique().sort().each(function (d) {
         if (d && d !== '-') designations.push(d);
     });
-    
-    departments.forEach(function(dept) {
+
+    departments.forEach(function (dept) {
         $('#departmentFilter').append('<option value="' + dept + '">' + dept + '</option>');
     });
-    
-    designations.forEach(function(desig) {
+
+    designations.forEach(function (desig) {
         $('#designationFilter').append('<option value="' + desig + '">' + desig + '</option>');
     });
 
@@ -112,7 +112,7 @@ function openAddModal() {
     document.getElementById('newDocumentsPreview').classList.add('hidden');
     document.getElementById('employeeIsActive').checked = true;
     document.getElementById('employeeModal').classList.remove('hidden');
-    
+
     const submitBtn = document.getElementById('submitBtn');
     const submitBtnText = document.getElementById('submitBtnText');
     const submitBtnSpinner = document.getElementById('submitBtnSpinner');
@@ -137,7 +137,7 @@ function openEditModal(employee) {
     // Handle photo preview
     const photoPreview = document.getElementById('photoPreview');
     const photoPreviewImg = document.getElementById('photoPreviewImg');
-    
+
     if (employee.photo && employee.photo !== '' && employee.photo !== null && employee.photo !== '0') {
         photoPreviewImg.src = employee.photo;
         photoPreview.classList.remove('hidden');
@@ -245,7 +245,7 @@ function openEditModal(employee) {
         });
 
     document.getElementById('employeeModal').classList.remove('hidden');
-    
+
     const submitBtn = document.getElementById('submitBtn');
     const submitBtnText = document.getElementById('submitBtnText');
     const submitBtnSpinner = document.getElementById('submitBtnSpinner');
@@ -266,7 +266,7 @@ function viewEmployee(employee) {
     // Store current employee data for payment functions
     currentPaymentEmployeeId = employee.id;
     currentPaymentEmployeeName = employee.name;
-    
+
     document.getElementById('viewName').innerText = employee.name || '-';
     document.getElementById('viewName').setAttribute('data-employee-id', employee.id);
     document.getElementById('viewPhone').innerText = employee.phone || '-';
@@ -347,6 +347,135 @@ function viewEmployee(employee) {
             document.getElementById('viewNoDocuments').classList.remove('hidden');
         });
 
+    // Fetch Attendance History and Render Chart
+    fetch('get_employee_attendance.php?employee_id=' + employee.id)
+        .then(response => response.json())
+        .then(data => {
+            const attendanceList = document.getElementById('viewAttendanceList');
+            const noAttendanceMsg = document.getElementById('viewNoAttendance');
+
+            attendanceList.innerHTML = '';
+
+            if (data.success && data.attendance && data.attendance.length > 0) {
+                noAttendanceMsg.classList.add('hidden');
+
+                // Process data for Chart and List
+                renderAttendanceChart(data.attendance);
+
+                data.attendance.forEach(record => {
+                    const row = document.createElement('tr');
+
+                    // Format Date
+                    const dateObj = new Date(record.date);
+                    const formattedDate = dateObj.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+
+                    // Format Times
+                    const formatTime = (timeStr) => {
+                        if (!timeStr) return '-';
+                        const [hours, minutes] = timeStr.split(':');
+                        const h = parseInt(hours, 10);
+                        const ampm = h >= 12 ? 'PM' : 'AM';
+                        const h12 = h % 12 || 12;
+                        return `${h12}:${minutes} ${ampm}`;
+                    };
+
+                    const inTime = formatTime(record.in_time);
+                    const outTime = formatTime(record.out_time);
+
+                    // Determine Status
+                    let statusHtml = '';
+                    if (record.status === 'Absent') {
+                        statusHtml = '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">Absent</span>';
+                    } else if (record.in_time && record.out_time) {
+                        statusHtml = '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Present</span>';
+                    } else if (record.in_time && !record.out_time) {
+                        // Check if it's today
+                        const today = new Date().toISOString().split('T')[0];
+                        if (record.date === today) {
+                            statusHtml = '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">Checked In</span>';
+                        } else {
+                            statusHtml = '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Missing Punch</span>';
+                        }
+                    } else {
+                        statusHtml = '<span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">Absent</span>';
+                    }
+
+                    row.innerHTML = `
+                        <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">${formattedDate}</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500">${inTime}</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500">${outTime}</td>
+                        <td class="px-4 py-2 whitespace-nowrap">${statusHtml}</td>
+                    `;
+                    attendanceList.appendChild(row);
+                });
+            } else {
+                noAttendanceMsg.classList.remove('hidden');
+                // Clear chart if no data
+                if (window.attendanceChartInstance) {
+                    window.attendanceChartInstance.destroy();
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching attendance:', error);
+            document.getElementById('viewAttendanceList').innerHTML = '';
+            document.getElementById('viewNoAttendance').classList.remove('hidden');
+        });
+
+
+
+    // Fetch Payment History for Tab
+    fetch(`api/get_employee_payment_history.php?employee_id=${employee.id}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const totalPaid = parseFloat(data.total_paid || 0);
+                const totalDeductions = parseFloat(data.total_deductions || 0);
+                const netPayment = parseFloat(data.net_payment || (totalPaid - totalDeductions));
+
+                document.getElementById('tabTotalPaid').innerText = totalPaid.toFixed(2);
+                document.getElementById('tabTotalDeductions').innerText = totalDeductions.toFixed(2);
+                document.getElementById('tabNetPayment').innerText = netPayment.toFixed(2);
+
+                const tableBody = document.getElementById('tabPaymentHistoryTableBody');
+                const noMsg = document.getElementById('tabNoPaymentsMessage');
+                tableBody.innerHTML = '';
+
+                if (data.payments && data.payments.length > 0) {
+                    noMsg.classList.add('hidden');
+                    data.payments.forEach(p => {
+                        const isCredit = p.transaction_type === 'credit' || p.transaction_type === 'deduction';
+                        const amountClass = isCredit ? 'text-red-600' : 'text-green-600';
+                        const typeClass = isCredit ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800';
+                        const typeLabel = isCredit ? 'Credit' : 'Debit';
+
+                        const row = `
+                            <tr>
+                                <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">${p.payment_date}</td>
+                                <td class="px-4 py-2 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${typeClass}">
+                                        ${typeLabel}
+                                    </span>
+                                </td>
+                                <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500">${p.category}</td>
+                                <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-500">${p.description || '-'}</td>
+                                <td class="px-4 py-2 whitespace-nowrap text-sm text-right font-medium ${amountClass}">₹${parseFloat(p.amount).toFixed(2)}</td>
+                            </tr>
+                        `;
+                        tableBody.innerHTML += row;
+                    });
+                } else {
+                    noMsg.classList.remove('hidden');
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching payments:', error);
+        });
+
+    // Reset to Overview Tab
+    switchTab('overview');
+
     const viewModal = document.getElementById('viewModal');
     viewModal.style.display = 'block';
     setTimeout(() => {
@@ -354,6 +483,101 @@ function viewEmployee(employee) {
         viewModal.classList.add('opacity-100', 'pointer-events-auto');
     }, 10);
 }
+
+function switchTab(tabId) {
+    // Hide all tab content
+    document.querySelectorAll('#viewTabContent > div').forEach(div => {
+        div.classList.add('hidden');
+    });
+
+    // Deactivate all tabs
+    document.querySelectorAll('#viewTabs button').forEach(btn => {
+        btn.classList.remove('active-tab', 'border-teal-600', 'text-teal-600');
+        btn.classList.add('border-transparent', 'text-gray-500');
+    });
+
+    // Show selected content
+    document.getElementById(tabId).classList.remove('hidden');
+
+    // Activate selected tab
+    const activeTab = document.getElementById(tabId + '-tab');
+    activeTab.classList.remove('border-transparent', 'text-gray-500');
+    activeTab.classList.add('active-tab', 'border-teal-600', 'text-teal-600');
+}
+
+function renderAttendanceChart(attendanceData) {
+    const ctx = document.getElementById('attendanceChart').getContext('2d');
+
+    // Destroy existing chart if any
+    if (window.attendanceChartInstance) {
+        window.attendanceChartInstance.destroy();
+    }
+
+    // Sort data by date ascending for the chart
+    const sortedData = [...attendanceData].reverse(); // API returns DESC
+
+    // Process data for chart
+    const labels = sortedData.map(r => {
+        const date = new Date(r.date);
+        return `${date.getDate()}/${date.getMonth() + 1}`;
+    });
+
+    // Calculate durations or simple presence (1 for present, 0 for absent/missing)
+    // For now, let's plot "Hours Worked" if out_time exists
+    const dataPoints = sortedData.map(r => {
+        if (r.in_time && r.out_time) {
+            const start = new Date(`1970-01-01T${r.in_time}`);
+            const end = new Date(`1970-01-01T${r.out_time}`);
+            return (end - start) / (1000 * 60 * 60); // Hours
+        }
+        return 0;
+    });
+
+    window.attendanceChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Hours Worked',
+                data: dataPoints,
+                backgroundColor: '#0d9488',
+                borderColor: '#0f766e',
+                borderWidth: 1,
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Hours'
+                    }
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function (context) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            if (context.parsed.y !== null) {
+                                label += context.parsed.y.toFixed(2) + ' hours';
+                            }
+                            return label;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
 
 function closeViewModal() {
     const viewModal = document.getElementById('viewModal');
@@ -482,13 +706,13 @@ function previewDocument(filePath, fileName) {
     const downloadLink = document.getElementById('documentDownloadLink');
 
     title.innerText = fileName;
-    
+
     // Set up download link with download attribute
     downloadLink.href = filePath;
     downloadLink.download = fileName;
-    
+
     // Also add onclick handler as backup
-    downloadLink.onclick = function(e) {
+    downloadLink.onclick = function (e) {
         e.preventDefault();
         downloadDocument(filePath, fileName);
     };
@@ -616,7 +840,7 @@ function deleteDocument(documentId, employeeId, event) {
                             // Refresh the documents list
                             const documentsList = document.getElementById('existingDocumentsList');
                             documentsList.innerHTML = '';
-                            
+
                             // Fetch updated documents
                             fetch('get_employee_documents.php?employee_id=' + employeeId)
                                 .then(response => response.json())
@@ -744,10 +968,10 @@ function previewDocuments(event) {
 
     if (files && files.length > 0) {
         preview.classList.remove('hidden');
-        
+
         // Convert FileList to Array to allow manipulation
         const filesArray = Array.from(files);
-        
+
         filesArray.forEach((file, index) => {
             const li = document.createElement('li');
             li.className = 'flex items-center justify-between py-2 border-b border-gray-200 last:border-b-0';
@@ -825,15 +1049,15 @@ function previewDocuments(event) {
             removeBtn.className = 'ml-2 text-red-600 hover:text-red-800 transition';
             removeBtn.title = 'Remove document';
             removeBtn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>';
-            removeBtn.onclick = function() {
+            removeBtn.onclick = function () {
                 // Remove this file from the array
                 filesArray.splice(index, 1);
-                
+
                 // Create new FileList from remaining files
                 const dt = new DataTransfer();
                 filesArray.forEach(f => dt.items.add(f));
                 fileInput.files = dt.files;
-                
+
                 // Re-render the preview
                 previewDocuments({ target: fileInput });
             };
@@ -863,7 +1087,36 @@ let currentPaymentEmployeeName = '';
 function openEmployeePaymentModal(employeeId, employeeName) {
     currentPaymentEmployeeId = employeeId;
     currentPaymentEmployeeName = employeeName;
-    
+
+    fetch(`api/get_employee_payment_history.php?employee_id=${employeeId}`)
+        .then(response => response.json())
+        .then(data => {
+            const summary = data && data.success ? data : {
+                total_debits: 0,
+                total_credits: 0,
+                net_balance: 0
+            };
+            renderEmployeePaymentModal(employeeName, summary);
+        })
+        .catch(() => {
+            renderEmployeePaymentModal(employeeName, {
+                total_debits: 0,
+                total_credits: 0,
+                net_balance: 0
+            });
+        });
+}
+
+function renderEmployeePaymentModal(employeeName, summary) {
+    const totalDebits = parseFloat(summary.total_debits || 0);
+    const totalCredits = parseFloat(summary.total_credits || 0);
+    const outstandingRaw = summary.net_balance !== undefined ? parseFloat(summary.net_balance) : (totalCredits - totalDebits);
+    const outstanding = isNaN(outstandingRaw) ? 0 : outstandingRaw;
+    const outstandingLabel = outstanding > 0 ? 'Outstanding' : outstanding < 0 ? 'Advance/Overpaid' : 'Settled';
+    const outstandingValueClass = outstanding > 0 ? 'text-red-600' : outstanding < 0 ? 'text-green-600' : 'text-gray-700';
+    const outstandingCardClass = outstanding > 0 ? 'bg-yellow-50 border-yellow-200' : outstanding < 0 ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200';
+    const outstandingTextClass = outstanding > 0 ? 'text-yellow-800' : outstanding < 0 ? 'text-green-800' : 'text-gray-700';
+
     Swal.fire({
         title: 'Record Employee Payment',
         html: `
@@ -872,41 +1125,42 @@ function openEmployeePaymentModal(employeeId, employeeName) {
                     <label class="block text-sm font-medium text-gray-700 mb-1">Employee Name</label>
                     <input type="text" value="${employeeName}" disabled class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-700">
                 </div>
-                
-                <div class="grid grid-cols-2 gap-3 mb-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Transaction Type</label>
-                        <select id="paymentTransactionType" class="w-full px-3 py-2 border border-gray-300 rounded-md">
-                            <option value="salary">Salary</option>
-                            <option value="bonus">Bonus</option>
-                            <option value="advance">Advance</option>
-                            <option value="deduction">Deduction</option>
-                        </select>
+                <div class="grid grid-cols-2 gap-3 mb-4 items-start">
+                    <div class="p-3 ${outstandingCardClass} border rounded-md">
+                        <p class="text-xs ${outstandingTextClass} font-semibold uppercase mb-1">${outstandingLabel}</p>
+                        <p class="text-xl font-bold ${outstandingValueClass}">₹${Math.abs(outstanding).toFixed(2)}</p>
                     </div>
+                    <div class="flex items-center justify-end h-full">
+                        <button id="viewHistoryBtn" type="button" class="inline-flex items-center px-4 py-2 bg-teal-600 text-white text-sm font-semibold rounded-md shadow hover:bg-teal-700 transition">
+                            View Transaction History
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 mb-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Payment Date</label>
                         <input type="date" id="paymentDate" value="${new Date().toISOString().split('T')[0]}" class="w-full px-3 py-2 border border-gray-300 rounded-md">
                     </div>
-                </div>
-                
-                <div class="grid grid-cols-2 gap-3 mb-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Amount (₹)</label>
-                        <input type="number" id="paymentAmount" placeholder="0.00" min="0.01" step="0.01" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                        <input type="number" id="paymentAmount" value="${Math.abs(outstanding).toFixed(2)}" placeholder="0.00" min="0.01" step="0.01" class="w-full px-3 py-2 border border-gray-300 rounded-md">
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                        <select id="paymentCategory" class="w-full px-3 py-2 border border-gray-300 rounded-md">
-                            <option value="Monthly Salary">Monthly Salary</option>
-                            <option value="Performance Bonus">Performance Bonus</option>
-                            <option value="Festival Bonus">Festival Bonus</option>
-                            <option value="Overtime">Overtime</option>
-                            <option value="Advance Payment">Advance Payment</option>
-                            <option value="Tax Deduction">Tax Deduction</option>
-                            <option value="Leave Deduction">Leave Deduction</option>
-                            <option value="Other">Other</option>
-                        </select>
-                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                    <select id="paymentCategory" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+                        <option value="Monthly Salary">Monthly Salary</option>
+                        <option value="Performance Bonus">Performance Bonus</option>
+                        <option value="Festival Bonus">Festival Bonus</option>
+                        <option value="Overtime">Overtime</option>
+                        <option value="Advance Payment">Advance Payment</option>
+                        <option value="Tax Deduction">Tax Deduction</option>
+                        <option value="Leave Deduction">Leave Deduction</option>
+                        <option value="Other">Other</option>
+                    </select>
+                    <input type="text" id="paymentCategoryOther" class="mt-2 w-full px-3 py-2 border border-gray-300 rounded-md hidden" placeholder="Enter category name" autocomplete="off">
                 </div>
                 
                 <div>
@@ -920,36 +1174,56 @@ function openEmployeePaymentModal(employeeId, employeeName) {
         cancelButtonText: 'Cancel',
         confirmButtonColor: '#0d9488',
         didOpen: () => {
-            // Focus on the amount field
             setTimeout(() => {
                 document.getElementById('paymentAmount').focus();
             }, 100);
+            const historyBtn = document.getElementById('viewHistoryBtn');
+            if (historyBtn) {
+                historyBtn.addEventListener('click', () => {
+                    viewEmployeePaymentHistory(true);
+                });
+            }
+            const categorySelect = document.getElementById('paymentCategory');
+            const categoryOtherInput = document.getElementById('paymentCategoryOther');
+            if (categorySelect && categoryOtherInput) {
+                const toggleOther = () => {
+                    if (categorySelect.value === 'Other') {
+                        categoryOtherInput.classList.remove('hidden');
+                        categoryOtherInput.focus();
+                    } else {
+                        categoryOtherInput.classList.add('hidden');
+                        categoryOtherInput.value = '';
+                    }
+                };
+                categorySelect.addEventListener('change', toggleOther);
+                toggleOther();
+            }
         },
         preConfirm: () => {
             const amount = document.getElementById('paymentAmount').value;
-            const transactionType = document.getElementById('paymentTransactionType').value;
             const category = document.getElementById('paymentCategory').value;
+            const categoryOther = document.getElementById('paymentCategoryOther').value.trim();
             const paymentDate = document.getElementById('paymentDate').value;
             const description = document.getElementById('paymentDescription').value;
-            
+
             if (!amount || amount <= 0) {
                 Swal.showValidationMessage('Please enter a valid amount');
-                return false;
-            }
-            if (!transactionType) {
-                Swal.showValidationMessage('Please select a transaction type');
                 return false;
             }
             if (!paymentDate) {
                 Swal.showValidationMessage('Please select a payment date');
                 return false;
             }
-            
+            if (category === 'Other' && !categoryOther) {
+                Swal.showValidationMessage('Please enter a category name');
+                return false;
+            }
+
             return {
                 employee_id: currentPaymentEmployeeId,
                 amount: amount,
-                transaction_type: transactionType,
-                category: category,
+                transaction_type: 'debit',
+                category: category === 'Other' ? categoryOther : category,
                 payment_date: paymentDate,
                 description: description
             };
@@ -970,7 +1244,7 @@ function submitEmployeePayment(paymentData) {
             Swal.showLoading();
         }
     });
-    
+
     const formData = new FormData();
     formData.append('employee_id', paymentData.employee_id);
     formData.append('amount', paymentData.amount);
@@ -978,43 +1252,43 @@ function submitEmployeePayment(paymentData) {
     formData.append('category', paymentData.category);
     formData.append('payment_date', paymentData.payment_date);
     formData.append('description', paymentData.description);
-    
+
     fetch('api/save_employee_payment.php', {
         method: 'POST',
         body: formData
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            Swal.fire({
-                icon: 'success',
-                title: 'Success!',
-                text: data.message,
-                confirmButtonColor: '#0d9488',
-                timer: 2000
-            }).then(() => {
-                location.reload();
-            });
-        } else {
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success!',
+                    text: data.message,
+                    confirmButtonColor: '#0d9488',
+                    timer: 2000
+                }).then(() => {
+                    location.reload();
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: data.message,
+                    confirmButtonColor: '#dc2626'
+                });
+            }
+        })
+        .catch(error => {
             Swal.fire({
                 icon: 'error',
                 title: 'Error!',
-                text: data.message,
+                text: 'An error occurred while recording payment',
                 confirmButtonColor: '#dc2626'
             });
-        }
-    })
-    .catch(error => {
-        Swal.fire({
-            icon: 'error',
-            title: 'Error!',
-            text: 'An error occurred while recording payment',
-            confirmButtonColor: '#dc2626'
         });
-    });
 }
 
-function viewEmployeePaymentHistory() {
+function viewEmployeePaymentHistory(returnToPayment = false) {
     if (!currentPaymentEmployeeId) {
         Swal.fire({
             icon: 'error',
@@ -1024,25 +1298,33 @@ function viewEmployeePaymentHistory() {
         });
         return;
     }
-    
+
     fetch(`api/get_employee_payment_history.php?employee_id=${currentPaymentEmployeeId}`)
         .then(response => response.json())
         .then(data => {
             if (data.success) {
+                const totalDebits = parseFloat(data.total_debits || data.total_paid || 0);
+                const totalCredits = parseFloat(data.total_credits || data.total_deductions || 0);
+                const outstandingRaw = data.net_balance !== undefined ? parseFloat(data.net_balance) : (totalCredits - totalDebits);
+                const outstanding = isNaN(outstandingRaw) ? 0 : outstandingRaw;
+                const outstandingLabel = outstanding > 0 ? 'Outstanding' : outstanding < 0 ? 'Advance/Overpaid' : 'Settled';
+                const outstandingClass = outstanding > 0 ? 'text-blue-600' : outstanding < 0 ? 'text-green-600' : 'text-gray-700';
+                const outstandingBoxClass = outstanding > 0 ? 'bg-blue-50 border-blue-200' : outstanding < 0 ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200';
+
                 let html = `
                     <div class="text-left">
                         <div class="grid grid-cols-3 gap-2 mb-4">
                             <div class="bg-green-50 p-3 rounded border border-green-200">
-                                <p class="text-xs text-gray-600">Total Paid</p>
-                                <p class="text-xl font-bold text-green-600">₹${data.total_paid.toFixed(2)}</p>
+                                <p class="text-xs text-green-700">Payments (Debit)</p>
+                                <p class="text-xl font-bold text-green-700">₹${totalDebits.toFixed(2)}</p>
                             </div>
                             <div class="bg-red-50 p-3 rounded border border-red-200">
-                                <p class="text-xs text-gray-600">Total Deductions</p>
-                                <p class="text-xl font-bold text-red-600">₹${data.total_deductions.toFixed(2)}</p>
+                                <p class="text-xs text-red-700">Credits/Deductions</p>
+                                <p class="text-xl font-bold text-red-700">₹${totalCredits.toFixed(2)}</p>
                             </div>
-                            <div class="bg-blue-50 p-3 rounded border border-blue-200">
-                                <p class="text-xs text-gray-600">Net Payment</p>
-                                <p class="text-xl font-bold text-blue-600">₹${data.net_payment.toFixed(2)}</p>
+                            <div class="p-3 rounded border ${outstandingBoxClass}">
+                                <p class="text-xs ${outstandingClass}">${outstandingLabel}</p>
+                                <p class="text-xl font-bold ${outstandingClass}">₹${Math.abs(outstanding).toFixed(2)}</p>
                             </div>
                         </div>
                         
@@ -1061,17 +1343,14 @@ function viewEmployeePaymentHistory() {
                                         <tr class="border-b">
                                             <td class="px-2 py-2 text-gray-900">${p.payment_date}</td>
                                             <td class="px-2 py-2">
-                                                <span class="px-2 py-1 rounded text-xs font-medium ${
-                                                    p.transaction_type === 'deduction' ? 'bg-red-100 text-red-800' :
-                                                    p.transaction_type === 'advance' ? 'bg-yellow-100 text-yellow-800' :
-                                                    p.transaction_type === 'bonus' ? 'bg-blue-100 text-blue-800' :
-                                                    'bg-green-100 text-green-800'
-                                                }">
-                                                    ${p.transaction_type.charAt(0).toUpperCase() + p.transaction_type.slice(1)}
+                                                <span class="px-2 py-1 rounded text-xs font-medium ${p.transaction_type === 'credit' || p.transaction_type === 'deduction' ? 'bg-red-100 text-red-800' :
+                        'bg-green-100 text-green-800'
+                    }">
+                                                    ${p.transaction_type === 'credit' || p.transaction_type === 'deduction' ? 'Credit' : 'Debit'}
                                                 </span>
                                             </td>
                                             <td class="px-2 py-2 text-gray-700">${p.category}</td>
-                                            <td class="px-2 py-2 text-right font-semibold ${p.transaction_type === 'deduction' ? 'text-red-600' : 'text-green-600'}">
+                                            <td class="px-2 py-2 text-right font-semibold ${p.transaction_type === 'credit' || p.transaction_type === 'deduction' ? 'text-red-600' : 'text-green-600'}">
                                                 ₹${parseFloat(p.amount).toFixed(2)}
                                             </td>
                                         </tr>
@@ -1081,14 +1360,36 @@ function viewEmployeePaymentHistory() {
                         </div>
                     </div>
                 `;
-                
+
                 Swal.fire({
                     title: `Payment History - ${currentPaymentEmployeeName}`,
                     html: html,
                     width: 700,
+                    showCancelButton: true,
                     showConfirmButton: true,
-                    confirmButtonText: 'Close',
-                    confirmButtonColor: '#0d9488'
+                    confirmButtonText: 'Payment',
+                    cancelButtonText: 'Close',
+                    confirmButtonColor: '#0d9488',
+                    cancelButtonColor: '#6b7280',
+                    customClass: {
+                        container: 'swal-payment-history-container'
+                    }
+                }).then((result) => {
+                    if (returnToPayment && result.isConfirmed) {
+                        // Close Employee Information modal if open
+                        const viewModal = document.getElementById('viewModal');
+                        if (viewModal && viewModal.style.display !== 'none') {
+                            viewModal.classList.remove('opacity-100', 'pointer-events-auto');
+                            viewModal.classList.add('opacity-0', 'pointer-events-none');
+                            setTimeout(() => {
+                                viewModal.style.display = 'none';
+                                // Open payment modal after view modal is closed
+                                openEmployeePaymentModal(currentPaymentEmployeeId, currentPaymentEmployeeName);
+                            }, 250);
+                        } else {
+                            openEmployeePaymentModal(currentPaymentEmployeeId, currentPaymentEmployeeName);
+                        }
+                    }
                 });
             } else {
                 Swal.fire({
@@ -1108,3 +1409,62 @@ function viewEmployeePaymentHistory() {
             });
         });
 }
+
+
+
+function openPaymentFromView(employeeId, employeeName) {
+    // Close the View Modal first
+    closeViewModal();
+
+    // Slight delay to allow the close animation to start/finish before opening the next one
+    setTimeout(() => {
+        openEmployeePaymentModal(employeeId, employeeName);
+    }, 250);
+}
+
+function generateEmployeeQR(employeeId, employeeName, designation) {
+    currentQRData = employeeId;
+    // Format: E-{id}
+    currentQRFilename = `QR-${employeeName}-${designation}`;
+
+    // Clear previous QR code
+    document.getElementById('qrcode').innerHTML = '';
+
+    // Generate new QR code
+    new QRCode(document.getElementById('qrcode'), {
+        text: employeeId,
+        width: 256,
+        height: 256,
+        colorDark: '#000000',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.H
+    });
+
+    // Update modal content
+    document.getElementById('qrcode').parentElement.parentElement.querySelector('h3').innerText = 'Employee QR Code';
+    if (document.getElementById('qrStudentName')) {
+        document.getElementById('qrStudentName').innerText = 'Employee: ' + employeeName + ' (' + designation + ')';
+    }
+    if (document.getElementById('qrData')) {
+        document.getElementById('qrData').innerText = 'QR Data: ' + employeeId;
+    }
+
+    // Show modal
+    document.getElementById('qrModal').classList.remove('hidden');
+}
+
+function closeQRModal() {
+    document.getElementById('qrModal').classList.add('hidden');
+}
+
+function downloadQR() {
+    const canvas = document.querySelector('#qrcode canvas');
+    if (canvas) {
+        const url = canvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.download = currentQRFilename + '.png';
+        link.href = url;
+        link.click();
+    }
+}
+

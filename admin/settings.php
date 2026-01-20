@@ -113,8 +113,7 @@ while ($row = $result->fetch_assoc()) {
                         </span>
                         <div class="dropdown-content">
                             <a href="settings.php" class="active">Payment Settings</a>
-                            <a href="contact_settings.php">Contact Details</a>
-                        </div>
+                            <a href="contact_settings.php">Contact Details</a>                            <a href="subscription_plans.php">Subscription Plans</a>                        </div>
                     </div>
                     <a href="../logout.php" class="text-white hover:text-red-200 font-medium transition">Logout</a>
                 </div>

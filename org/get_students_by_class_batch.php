@@ -22,18 +22,48 @@ $class = isset($_GET['class']) ? trim($_GET['class']) : '';
 $batch = isset($_GET['batch']) ? trim($_GET['batch']) : '';
 $stream = isset($_GET['stream']) ? trim($_GET['stream']) : '';
 
-if ($class === '' || $batch === '' || $stream === '') {
-    echo json_encode(['success' => false, 'message' => 'Class, batch and stream are required']);
+// Require at least one filter to avoid fetching all rows unintentionally
+$types = 'i';
+$params = [$org_id];
+$conditions = ['org_id = ?', 'is_active = 1'];
+
+if ($class !== '') {
+    $conditions[] = 'class = ?';
+    $types .= 's';
+    $params[] = $class;
+}
+if ($batch !== '') {
+    $conditions[] = 'batch = ?';
+    $types .= 's';
+    $params[] = $batch;
+}
+if ($stream !== '') {
+    $conditions[] = 'stream = ?';
+    $types .= 's';
+    $params[] = $stream;
+}
+
+if (count($params) === 1) {
+    echo json_encode(['success' => false, 'message' => 'Please provide at least one filter (class, batch, or stream).']);
     exit;
 }
 
-// Fetch all active students matching the class, batch, and stream
-$stmt = $conn->prepare("SELECT id, name, roll_number, class, batch, stream FROM students WHERE org_id = ? AND class = ? AND batch = ? AND stream = ? AND is_active = 1 ORDER BY roll_number ASC, name ASC");
+$whereSql = implode(' AND ', $conditions);
+$sql = "SELECT id, name, roll_number, class, batch, stream FROM students WHERE $whereSql ORDER BY roll_number ASC, name ASC";
+
+$stmt = $conn->prepare($sql);
 if (!$stmt) {
     echo json_encode(['success' => false, 'message' => 'Failed to prepare statement']);
     exit;
 }
-$stmt->bind_param('isss', $org_id, $class, $batch, $stream);
+
+// Bind parameters dynamically
+$bindParams = [];
+$bindParams[] = & $types;
+foreach ($params as $key => $value) {
+    $bindParams[] = & $params[$key];
+}
+call_user_func_array([$stmt, 'bind_param'], $bindParams);
 
 if ($stmt->execute()) {
     $result = $stmt->get_result();

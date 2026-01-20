@@ -14,6 +14,44 @@ if (!isSubscribed($org_id)) {
     redirect('dashboard.php');
 }
 
+// Fetch student statistics
+$total_students = 0;
+$active_students = 0;
+$inactive_students = 0;
+$total_balance_due = 0;
+
+$statsStmt = $conn->prepare("SELECT 
+    COUNT(*) as total,
+    SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as active,
+    SUM(CASE WHEN is_active = 0 THEN 1 ELSE 0 END) as inactive
+    FROM students WHERE org_id = ?");
+$statsStmt->bind_param('i', $org_id);
+$statsStmt->execute();
+$statsResult = $statsStmt->get_result()->fetch_assoc();
+$total_students = intval($statsResult['total'] ?? 0);
+$active_students = intval($statsResult['active'] ?? 0);
+$inactive_students = intval($statsResult['inactive'] ?? 0);
+$statsStmt->close();
+
+// Calculate total balance due (negative balances mean students owe money)
+$balanceStmt = $conn->prepare("SELECT 
+    SUM(CASE 
+        WHEN sp.transaction_type = 'debit' THEN ABS(sp.amount)
+        WHEN sp.transaction_type = 'credit' THEN -ABS(sp.amount)
+        ELSE 0 
+    END) as total_balance
+    FROM students s
+    LEFT JOIN student_payments sp ON s.id = sp.student_id
+    WHERE s.org_id = ?
+    GROUP BY s.org_id");
+$balanceStmt->bind_param('i', $org_id);
+$balanceStmt->execute();
+$balanceResult = $balanceStmt->get_result();
+if ($balanceRow = $balanceResult->fetch_assoc()) {
+    $total_balance_due = floatval($balanceRow['total_balance'] ?? 0);
+}
+$balanceStmt->close();
+
 // Include Logic Modules
 require 'modules/students_logic.php';
 
@@ -113,6 +151,15 @@ $result = $conn->query("
     GROUP BY s.id
     ORDER BY s.class ASC, s.roll_number ASC
 ");
+
+// Prepare attendance summary queries for the current month
+$month_start = date('Y-m-01');
+$month_end = date('Y-m-t');
+$stu_total_stmt = $conn->prepare("SELECT COUNT(*) as total FROM attendance WHERE student_id = ? AND date BETWEEN ? AND ?");
+$stu_present_stmt = $conn->prepare("SELECT COUNT(*) as present FROM attendance WHERE student_id = ? AND date BETWEEN ? AND ? AND in_time IS NOT NULL");
+// Prepare today's status query
+$today = date('Y-m-d');
+$stu_today_stmt = $conn->prepare("SELECT in_time, out_time FROM attendance WHERE student_id = ? AND date = ? ORDER BY id DESC LIMIT 1");
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -132,6 +179,9 @@ $result = $conn->query("
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- UX Improvements -->
+    <link rel="stylesheet" href="../assets/css/ux-improvements.css">
     
     <style>
         body,
@@ -325,22 +375,76 @@ $result = $conn->query("
         </div>
 
         <?php if ($success): ?>
-            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-6" role="alert">
-                <span class="block sm:inline"><?php echo $success; ?></span>
+            <div class="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-4 rounded-xl shadow-lg mb-6 flex items-center">
+                <i class="fas fa-check-circle text-2xl mr-3"></i>
+                <span class="font-semibold"><?php echo $success; ?></span>
             </div>
         <?php endif; ?>
         <?php if ($error): ?>
-            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-6" role="alert">
-                <span class="block sm:inline"><?php echo $error; ?></span>
+            <div class="bg-gradient-to-r from-red-500 to-red-600 text-white px-6 py-4 rounded-xl shadow-lg mb-6 flex items-center">
+                <i class="fas fa-exclamation-circle text-2xl mr-3"></i>
+                <span class="font-semibold"><?php echo $error; ?></span>
             </div>
         <?php endif; ?>
 
+        <!-- Statistics Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <!-- Total Students -->
+            <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white relative overflow-hidden transform transition hover:scale-105">
+                <div class="absolute top-0 right-0 w-20 h-20 bg-white opacity-10 rounded-full -mr-10 -mt-10"></div>
+                <div class="relative z-10">
+                    <p class="text-blue-100 text-sm font-medium uppercase tracking-wide mb-2">Total Students</p>
+                    <h3 class="text-4xl font-bold"><?php echo number_format($total_students); ?></h3>
+                    <div class="mt-4">
+                        <i class="fas fa-users text-3xl opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Students -->
+            <div class="bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl shadow-lg p-6 text-white relative overflow-hidden transform transition hover:scale-105">
+                <div class="absolute top-0 right-0 w-20 h-20 bg-white opacity-10 rounded-full -mr-10 -mt-10"></div>
+                <div class="relative z-10">
+                    <p class="text-green-100 text-sm font-medium uppercase tracking-wide mb-2">Active Students</p>
+                    <h3 class="text-4xl font-bold"><?php echo number_format($active_students); ?></h3>
+                    <div class="mt-4">
+                        <i class="fas fa-user-check text-3xl opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Inactive Students -->
+            <div class="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg p-6 text-white relative overflow-hidden transform transition hover:scale-105">
+                <div class="absolute top-0 right-0 w-20 h-20 bg-white opacity-10 rounded-full -mr-10 -mt-10"></div>
+                <div class="relative z-10">
+                    <p class="text-orange-100 text-sm font-medium uppercase tracking-wide mb-2">Inactive Students</p>
+                    <h3 class="text-4xl font-bold"><?php echo number_format($inactive_students); ?></h3>
+                    <div class="mt-4">
+                        <i class="fas fa-user-times text-3xl opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Balance Summary -->
+            <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white relative overflow-hidden transform transition hover:scale-105">
+                <div class="absolute top-0 right-0 w-20 h-20 bg-white opacity-10 rounded-full -mr-10 -mt-10"></div>
+                <div class="relative z-10">
+                    <p class="text-purple-100 text-sm font-medium uppercase tracking-wide mb-2">Net Balance</p>
+                    <h3 class="text-4xl font-bold">₹<?php echo number_format(abs($total_balance_due)); ?></h3>
+                    <p class="text-purple-100 text-xs mt-1"><?php echo $total_balance_due < 0 ? 'Due from students' : 'Overpaid'; ?></p>
+                    <div class="mt-2">
+                        <i class="fas fa-rupee-sign text-3xl opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Student List -->
-        <div class="bg-white shadow overflow-hidden sm:rounded-lg p-4">
+        <div class="bg-white shadow-lg overflow-hidden sm:rounded-lg p-6">
             <?php if ($result->num_rows > 0): ?>
                 <!-- Advanced Filters Toggle Button and Deactivate Class -->
-                <div class="mb-4 flex flex-wrap justify-between items-center gap-3">
-                    <button id="toggleFiltersBtn" onclick="toggleAdvancedFilters()" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded shadow transition inline-flex items-center">
+                <div class="mb-6 flex flex-wrap justify-between items-center gap-3">
+                    <button id="toggleFiltersBtn" onclick="toggleAdvancedFilters()" class="bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-semibold py-2.5 px-5 rounded-lg shadow-md transition-all duration-200 inline-flex items-center focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
                         </svg>
@@ -348,22 +452,27 @@ $result = $conn->query("
                         <span id="activeFiltersCount" class="ml-2 bg-teal-500 text-white text-xs font-bold px-2 py-1 rounded-full hidden">0</span>
                     </button>
                     <div class="flex gap-3">
-                        <button onclick="clearAllFilters()" class="text-sm text-gray-600 hover:text-gray-800 underline">
-                            Clear All Filters
+                        <button onclick="clearAllFilters()" class="text-sm text-gray-600 hover:text-teal-600 font-medium underline hover:no-underline transition-colors">
+                            <i class="fas fa-redo text-xs mr-1"></i> Clear All Filters
                         </button>
-                        <button id="deactivateClassBatchBtn" onclick="deactivateClassBatch()" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded shadow transition">
-                            Deactivate Class
+                        <button id="deactivateClassBatchBtn" onclick="deactivateClassBatch()" class="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold py-2.5 px-5 rounded-lg shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
+                            <i class="fas fa-ban mr-2"></i> Deactivate Class
                         </button>
                     </div>
                 </div>
 
                 <!-- Advanced Filters Panel (Initially Hidden) -->
-                <div id="advancedFiltersPanel" class="hidden mb-6 border border-gray-300 rounded-lg p-4 bg-gray-50">
+                <div id="advancedFiltersPanel" class="hidden mb-6 border-2 border-gray-200 rounded-xl p-6 bg-gradient-to-br from-gray-50 to-white shadow-inner">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                        <i class="fas fa-filter text-teal-600 mr-2"></i> Advanced Filters
+                    </h3>
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                         <!-- Existing Filters -->
                         <div>
-                            <label class="block text-gray-700 text-sm font-bold mb-2">Class</label>
-                            <select id="classFilter" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-teal-500">
+                            <label class="block text-gray-700 text-sm font-semibold mb-2 flex items-center">
+                                <i class="fas fa-graduation-cap text-blue-500 mr-2 text-xs"></i> Class
+                            </label>
+                            <select id="classFilter" class="shadow-sm appearance-none border-2 border-gray-200 rounded-lg w-full py-2.5 px-3 text-gray-700 leading-tight transition-all duration-200 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-200 hover:border-gray-300">
                                 <option value="">All Classes</option>
                                 <?php
                                 $classesResult = $conn->query("SELECT DISTINCT class FROM students WHERE org_id = $org_id AND class IS NOT NULL ORDER BY class ASC");
@@ -514,6 +623,9 @@ $result = $conn->query("
                                         <th scope="col" class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Roll No</th>
                                         <th scope="col" class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Balance</th>
                                         <th scope="col" class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Advance</th>
+                                        <th scope="col" class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Today</th>
+                                        <th scope="col" class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Attendance</th>
+                                        <th scope="col" class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Percent</th>
                                         <th scope="col" class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
                                         <th scope="col" class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                         <th scope="col" class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">QR Code</th>
@@ -564,6 +676,50 @@ $result = $conn->query("
                                             ?>">
                                                 ₹<?php echo number_format($advance, 2); ?>
                                             </td>
+                                            <?php
+                                                // Today's status
+                                                $stu_today_stmt->bind_param('is', $row['id'], $today);
+                                                $stu_today_stmt->execute();
+                                                $stu_today_res = $stu_today_stmt->get_result();
+                                                $today_label = 'No Entry';
+                                                $today_class = 'bg-gray-100 text-gray-700';
+                                                $today_order = '0';
+                                                if ($stu_today_res && $stu_today_res->num_rows > 0) {
+                                                    $today_rec = $stu_today_res->fetch_assoc();
+                                                    $in_time_today = $today_rec['in_time'];
+                                                    $out_time_today = $today_rec['out_time'];
+                                                    if (empty($in_time_today) && empty($out_time_today)) {
+                                                        $today_label = 'Absent';
+                                                        $today_class = 'bg-red-100 text-red-700';
+                                                        $today_order = '0';
+                                                    } else {
+                                                        $today_label = 'Present';
+                                                        $today_class = 'bg-green-100 text-green-700';
+                                                        $today_order = '1';
+                                                    }
+                                                }
+                                            ?>
+                                            <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm" data-order="<?php echo $today_order; ?>">
+                                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold <?php echo $today_class; ?>"><?php echo $today_label; ?></span>
+                                            </td>
+                                            <?php
+                                                // Compute attendance summary for current month
+                                                $stu_total_stmt->bind_param('iss', $row['id'], $month_start, $month_end);
+                                                $stu_total_stmt->execute();
+                                                $stu_total_res = $stu_total_stmt->get_result();
+                                                $stu_total_row = $stu_total_res->fetch_assoc();
+                                                $total_days = (int)($stu_total_row['total'] ?? 0);
+
+                                                $stu_present_stmt->bind_param('iss', $row['id'], $month_start, $month_end);
+                                                $stu_present_stmt->execute();
+                                                $stu_present_res = $stu_present_stmt->get_result();
+                                                $stu_present_row = $stu_present_res->fetch_assoc();
+                                                $present_days = (int)($stu_present_row['present'] ?? 0);
+
+                                                $percent = $total_days > 0 ? round(($present_days / $total_days) * 100) : 0;
+                                            ?>
+                                            <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-700"><?php echo $present_days; ?>/<?php echo $total_days; ?></td>
+                                            <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-700"><?php echo $percent; ?>%</td>
                                             <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500"><?php echo htmlspecialchars($row['phone']); ?></td>
                                             <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-medium" data-order="<?php echo $row['is_active'] ? '1' : '0'; ?>">
                                                 <button

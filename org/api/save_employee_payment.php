@@ -30,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
     
-    if (empty($transaction_type) || !in_array($transaction_type, ['salary', 'bonus', 'deduction', 'advance'])) {
+    if (empty($transaction_type) || !in_array($transaction_type, ['debit', 'credit'])) {
         echo json_encode(['success' => false, 'message' => 'Invalid transaction type']);
         exit;
     }
@@ -47,9 +47,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
     
+    // Use transaction_type directly (debit or credit)
+    $positive_amount = abs($amount); // Always store positive amounts
+    
     // Insert Payment
     $stmt = $conn->prepare("INSERT INTO employee_payments (employee_id, amount, transaction_type, category, description, payment_date) VALUES (?, ?, ?, ?, ?, ?)");
-    $stmt->bind_param("idssss", $employee_id, $amount, $transaction_type, $category, $description, $payment_date);
+    $stmt->bind_param("idssss", $employee_id, $positive_amount, $transaction_type, $category, $description, $payment_date);
     
     if ($stmt->execute()) {
         echo json_encode(['success' => true, 'message' => 'Payment recorded successfully']);

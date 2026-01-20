@@ -27,6 +27,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['user_id'] = $id;
             $_SESSION['org_name'] = $name;
             $_SESSION['role'] = 'org';
+            
+            // Generate API token for this session
+            require __DIR__ . '/../api/auth_utils.php';
+            $token_data = create_token_for_org($conn, $id, 30*24*60*60); // 30 days
+            if ($token_data) {
+                $_SESSION['api_token'] = $token_data['token'];
+            }
+            
             redirect('dashboard.php');
         } else {
             $error = "Invalid password.";
@@ -77,7 +85,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 Login
             </button>
         </form>
-        <div class="mt-4 text-center">
+        <div class="mt-6 text-center">
+            <a href="forgot_password.php" class="text-sm text-red-600 hover:text-red-800 font-semibold block mb-3">Forgot Password?</a>
             <a href="../index.php" class="text-sm text-teal-600 hover:text-teal-800">Back to Home</a>
         </div>
     </div>

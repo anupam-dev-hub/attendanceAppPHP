@@ -58,7 +58,74 @@ $stmt = $conn->prepare($students_query);
 $stmt->bind_param("i", $org_id);
 $stmt->execute();
 $students_result = $stmt->get_result();
+
+// Fetch fee initialization history with student details
+$history_details_query = "
+    SELECT sp.category,
+           s.id as student_id,
+           s.name as student_name,
+           sp.amount,
+           sp.created_at
+    FROM student_payments sp
+    JOIN students s ON sp.student_id = s.id
+    WHERE s.org_id = ? 
+    AND sp.transaction_type = 'credit'
+    AND sp.category LIKE '% - %'
+    AND sp.category NOT IN ('Admission', 'Advance Payment', 'Fine', 'Other')
+    ORDER BY sp.category DESC, s.name ASC
+";
+$details_stmt = $conn->prepare($history_details_query);
+$details_stmt->bind_param("i", $org_id);
+$details_stmt->execute();
+$details_result = $details_stmt->get_result();
+
+$selected_fee_type = isset($_GET['fee_type']) ? trim($_GET['fee_type']) : 'all';
+$fee_types = [];
+
+// Group details by category with optional fee-type filter
+$grouped_history = [];
+while ($detail = $details_result->fetch_assoc()) {
+    $category = $detail['category'];
+    $amount = abs((float)$detail['amount']); // Ensure positive values for history display
+
+    // Derive fee name (text before last " - ")
+    $lastDashPos = strrpos($category, ' - ');
+    $fee_name = ($lastDashPos !== false) ? substr($category, 0, $lastDashPos) : $category;
+
+    // Collect fee types for filter options
+    if (!in_array($fee_name, $fee_types, true)) {
+        $fee_types[] = $fee_name;
+    }
+
+    // Apply filter if selected
+    if ($selected_fee_type !== 'all' && $fee_name !== $selected_fee_type) {
+        continue;
+    }
+
+    if (!isset($grouped_history[$category])) {
+        $grouped_history[$category] = [
+            'student_count' => 0,
+            'total_amount' => 0,
+            'last_init_date' => $detail['created_at'],
+            'students' => []
+        ];
+    }
+
+    $grouped_history[$category]['student_count']++;
+    $grouped_history[$category]['total_amount'] += $amount;
+    $grouped_history[$category]['last_init_date'] = max(
+        $grouped_history[$category]['last_init_date'],
+        $detail['created_at']
+    );
+    $grouped_history[$category]['students'][] = [
+        'name' => $detail['student_name'],
+        'amount' => $amount
+    ];
+}
+
+sort($fee_types);
 ?>
+<?php $force_show_nav = true; ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -322,6 +389,90 @@ $students_result = $stmt->get_result();
             </div>
         </div>
 
+        <!-- Fee Initialization History -->
+        <div class="bg-white shadow sm:rounded-lg">
+            <div class="px-4 py-5 sm:p-6">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+                    <h3 class="text-lg font-medium text-gray-900">Fee Initialization History by Month</h3>
+                    <form method="GET" class="flex items-center gap-2">
+                        <label for="fee_type" class="text-sm text-gray-700 whitespace-nowrap">Fee Type:</label>
+                        <select id="fee_type" name="fee_type" class="border rounded px-3 py-2 text-sm text-gray-700 focus:ring-2 focus:ring-teal-500" onchange="this.form.submit()">
+                            <option value="all" <?php echo ($selected_fee_type === 'all') ? 'selected' : ''; ?>>All Fee Types</option>
+                            <?php foreach ($fee_types as $fee_type): ?>
+                                <option value="<?php echo htmlspecialchars($fee_type); ?>" <?php echo ($selected_fee_type === $fee_type) ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($fee_type); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </form>
+                </div>
+
+                <?php if (count($grouped_history) > 0): ?>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Month</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Students Initialized</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Amount</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Initialized</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <?php $row_index = 0; foreach ($grouped_history as $category => $history): $row_index++; ?>
+                                    <tr class="hover:bg-gray-50 transition cursor-pointer" onclick="toggleStudentDetails(<?php echo $row_index; ?>)">
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                            <span id="expand-icon-<?php echo $row_index; ?>" class="inline-block mr-2">▶</span>
+                                            <?php 
+                                                // Extract month/fee from category like "Lab fee - January 2026" or "Monthly Fee - January 2026"
+                                                // Find the last " - " and extract everything after it
+                                                $lastDashPos = strrpos($category, ' - ');
+                                                if ($lastDashPos !== false) {
+                                                    $displayText = substr($category, $lastDashPos + 3); // Get date part after last " - "
+                                                    $feeName = substr($category, 0, $lastDashPos); // Get fee name before last " - "
+                                                    echo htmlspecialchars($feeName . ' (' . $displayText . ')');
+                                                } else {
+                                                    echo htmlspecialchars($category);
+                                                }
+                                            ?>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                            <?php echo $history['student_count']; ?> student(s)
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                            ₹<?php echo number_format($history['total_amount'], 2); ?>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            <?php echo date('M d, Y', strtotime($history['last_init_date'])); ?>
+                                        </td>
+                                    </tr>
+                                    <tr id="details-row-<?php echo $row_index; ?>" class="details-row hidden">
+                                        <td colspan="4" class="px-6 py-4 bg-gray-50">
+                                            <div class="ml-6">
+                                                <h4 class="text-sm font-medium text-gray-900 mb-3">Students Initialized:</h4>
+                                                <div class="space-y-2">
+                                                    <?php foreach ($history['students'] as $student): ?>
+                                                        <div class="flex justify-between text-sm text-gray-700">
+                                                            <span><?php echo htmlspecialchars($student['name']); ?></span>
+                                                            <span class="font-medium">₹<?php echo number_format($student['amount'], 2); ?></span>
+                                                        </div>
+                                                    <?php endforeach; ?>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                <?php else: ?>
+                    <div class="text-center py-8 text-gray-500">
+                        <p>No fee initialization history found.</p>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+
         <!-- Information Box -->
         <div class="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
             <h4 class="text-lg font-semibold text-blue-900 mb-2">How It Works</h4>
@@ -335,6 +486,27 @@ $students_result = $stmt->get_result();
             </ul>
         </div>
     </div>
+
+    <style>
+        .hidden {
+            display: none;
+        }
+    </style>
+
+    <script>
+        function toggleStudentDetails(rowIndex) {
+            const detailsRow = document.getElementById('details-row-' + rowIndex);
+            const expandIcon = document.getElementById('expand-icon-' + rowIndex);
+            
+            if (detailsRow.classList.contains('hidden')) {
+                detailsRow.classList.remove('hidden');
+                expandIcon.textContent = '▼';
+            } else {
+                detailsRow.classList.add('hidden');
+                expandIcon.textContent = '▶';
+            }
+        }
+    </script>
 </body>
 </html>
 <?php $conn->close(); ?>
