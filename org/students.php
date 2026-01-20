@@ -126,6 +126,31 @@ $result = $conn->query("
             color: #6b7280;
         }
         
+        /* Single line rows - prevent wrapping */
+        #studentsTable tbody tr {
+            white-space: nowrap;
+        }
+        
+        #studentsTable tbody td {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 200px;
+        }
+        
+        /* Single line headers only for columns without search (Photo, Status, QR Code, Actions) */
+        #studentsTable thead th:nth-child(3),
+        #studentsTable thead th:nth-child(11),
+        #studentsTable thead th:nth-child(12),
+        #studentsTable thead th:nth-child(13) {
+            white-space: nowrap;
+        }
+        
+        /* Padding for fixed navbar */
+        body {
+            padding-top: 64px;
+        }
+        
         /* Mobile optimizations */
         @media (max-width: 640px) {
             .dataTables_wrapper .dataTables_length,
@@ -231,48 +256,165 @@ $result = $conn->query("
         <!-- Student List -->
         <div class="bg-white shadow overflow-hidden sm:rounded-lg p-4">
             <?php if ($result->num_rows > 0): ?>
-                <!-- Custom Filters -->
-                <div class="mb-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div>
-                        <label class="block text-gray-700 text-sm font-bold mb-2">Filter by Class</label>
-                        <select id="classFilter" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-teal-500">
-                            <option value="">All Classes</option>
-                            <?php
-                            // Fetch unique classes
-                            $classesResult = $conn->query("SELECT DISTINCT class FROM students WHERE org_id = $org_id AND class IS NOT NULL ORDER BY class ASC");
-                            while ($classRow = $classesResult->fetch_assoc()) {
-                                echo "<option value='" . htmlspecialchars($classRow['class']) . "'>" . htmlspecialchars($classRow['class']) . "</option>";
-                            }
-                            ?>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-gray-700 text-sm font-bold mb-2">Filter by Batch</label>
-                        <select id="batchFilter" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-teal-500">
-                            <option value="">All Batches</option>
-                             <?php
-                            // Fetch unique classes
-                            $classesResult = $conn->query("SELECT DISTINCT batch FROM students WHERE org_id = $org_id AND batch IS NOT NULL ORDER BY batch ASC");
-                            while ($classRow = $classesResult->fetch_assoc()) {
-                                echo "<option value='" . htmlspecialchars($classRow['batch']) . "'>" . htmlspecialchars($classRow['batch']) . "</option>";
-                            }
-                            ?>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-gray-700 text-sm font-bold mb-2">Filter by Status</label>
-                        <select id="statusFilter" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-teal-500">
-                            <option value="">All Students</option>
-                            <option value="Active">Active Only</option>
-                            <option value="Inactive">Inactive Only</option>
-                        </select>
-                    </div>
-                    <div class="flex items-end">
-                        <button id="deactivateClassBatchBtn"
-                                onclick="deactivateClassBatch()"
-                                class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded shadow transition">
+                <!-- Advanced Filters Toggle Button and Deactivate Class -->
+                <div class="mb-4 flex flex-wrap justify-between items-center gap-3">
+                    <button id="toggleFiltersBtn" onclick="toggleAdvancedFilters()" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded shadow transition inline-flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+                        </svg>
+                        Advanced Filters
+                        <span id="activeFiltersCount" class="ml-2 bg-teal-500 text-white text-xs font-bold px-2 py-1 rounded-full hidden">0</span>
+                    </button>
+                    <div class="flex gap-3">
+                        <button onclick="clearAllFilters()" class="text-sm text-gray-600 hover:text-gray-800 underline">
+                            Clear All Filters
+                        </button>
+                        <button id="deactivateClassBatchBtn" onclick="deactivateClassBatch()" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded shadow transition">
                             Deactivate Class
                         </button>
+                    </div>
+                </div>
+
+                <!-- Advanced Filters Panel (Initially Hidden) -->
+                <div id="advancedFiltersPanel" class="hidden mb-6 border border-gray-300 rounded-lg p-4 bg-gray-50">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                        <!-- Existing Filters -->
+                        <div>
+                            <label class="block text-gray-700 text-sm font-bold mb-2">Class</label>
+                            <select id="classFilter" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-teal-500">
+                                <option value="">All Classes</option>
+                                <?php
+                                $classesResult = $conn->query("SELECT DISTINCT class FROM students WHERE org_id = $org_id AND class IS NOT NULL ORDER BY class ASC");
+                                while ($classRow = $classesResult->fetch_assoc()) {
+                                    echo "<option value='" . htmlspecialchars($classRow['class']) . "'>" . htmlspecialchars($classRow['class']) . "</option>";
+                                }
+                                ?>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 text-sm font-bold mb-2">Batch</label>
+                            <select id="batchFilter" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-teal-500">
+                                <option value="">All Batches</option>
+                                <?php
+                                $batchesResult = $conn->query("SELECT DISTINCT batch FROM students WHERE org_id = $org_id AND batch IS NOT NULL ORDER BY batch ASC");
+                                while ($batchRow = $batchesResult->fetch_assoc()) {
+                                    echo "<option value='" . htmlspecialchars($batchRow['batch']) . "'>" . htmlspecialchars($batchRow['batch']) . "</option>";
+                                }
+                                ?>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 text-sm font-bold mb-2">Stream</label>
+                            <select id="streamFilter" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-teal-500">
+                                <option value="">All Streams</option>
+                                <?php
+                                $streamsResult = $conn->query("SELECT DISTINCT stream FROM students WHERE org_id = $org_id AND stream IS NOT NULL ORDER BY stream ASC");
+                                while ($streamRow = $streamsResult->fetch_assoc()) {
+                                    echo "<option value='" . htmlspecialchars($streamRow['stream']) . "'>" . htmlspecialchars($streamRow['stream']) . "</option>";
+                                }
+                                ?>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 text-sm font-bold mb-2">Status</label>
+                            <select id="statusFilter" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-teal-500">
+                                <option value="">All Students</option>
+                                <option value="Active">Active Only</option>
+                                <option value="Inactive">Inactive Only</option>
+                            </select>
+                        </div>
+
+                        <!-- New Advanced Filters -->
+                        <div>
+                            <label class="block text-gray-700 text-sm font-bold mb-2">Native District</label>
+                            <select id="districtFilter" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-teal-500">
+                                <option value="">All Districts</option>
+                                <?php
+                                $districtResult = $conn->query("SELECT DISTINCT native_district FROM students WHERE org_id = $org_id AND native_district IS NOT NULL ORDER BY native_district ASC");
+                                while ($distRow = $districtResult->fetch_assoc()) {
+                                    echo "<option value='" . htmlspecialchars($distRow['native_district']) . "'>" . htmlspecialchars($distRow['native_district']) . "</option>";
+                                }
+                                ?>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 text-sm font-bold mb-2">Religion</label>
+                            <select id="religionFilter" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-teal-500">
+                                <option value="">All Religions</option>
+                                <?php
+                                $religionResult = $conn->query("SELECT DISTINCT religion FROM students WHERE org_id = $org_id AND religion IS NOT NULL ORDER BY religion ASC");
+                                while ($relRow = $religionResult->fetch_assoc()) {
+                                    echo "<option value='" . htmlspecialchars($relRow['religion']) . "'>" . htmlspecialchars($relRow['religion']) . "</option>";
+                                }
+                                ?>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 text-sm font-bold mb-2">Community</label>
+                            <select id="communityFilter" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-teal-500">
+                                <option value="">All Communities</option>
+                                <?php
+                                $communityResult = $conn->query("SELECT DISTINCT community FROM students WHERE org_id = $org_id AND community IS NOT NULL ORDER BY community ASC");
+                                while ($comRow = $communityResult->fetch_assoc()) {
+                                    echo "<option value='" . htmlspecialchars($comRow['community']) . "'>" . htmlspecialchars($comRow['community']) . "</option>";
+                                }
+                                ?>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 text-sm font-bold mb-2">Gender</label>
+                            <select id="genderFilter" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-teal-500">
+                                <option value="">All Genders</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 text-sm font-bold mb-2">Nationality</label>
+                            <select id="nationalityFilter" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-teal-500">
+                                <option value="">All Nationalities</option>
+                                <?php
+                                $nationalityResult = $conn->query("SELECT DISTINCT nationality FROM students WHERE org_id = $org_id AND nationality IS NOT NULL ORDER BY nationality ASC");
+                                while ($natRow = $nationalityResult->fetch_assoc()) {
+                                    echo "<option value='" . htmlspecialchars($natRow['nationality']) . "'>" . htmlspecialchars($natRow['nationality']) . "</option>";
+                                }
+                                ?>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 text-sm font-bold mb-2">Exam Percentage</label>
+                            <select id="percentageFilter" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-teal-500">
+                                <option value="">All Students</option>
+                                <option value="90-100">90% - 100%</option>
+                                <option value="80-89">80% - 89%</option>
+                                <option value="70-79">70% - 79%</option>
+                                <option value="60-69">60% - 69%</option>
+                                <option value="50-59">50% - 59%</option>
+                                <option value="0-49">Below 50%</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 text-sm font-bold mb-2">Balance Status</label>
+                            <select id="balanceFilter" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-teal-500">
+                                <option value="">All Students</option>
+                                <option value="due">Has Due</option>
+                                <option value="paid">Paid Extra</option>
+                                <option value="clear">Clear (₹0)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-gray-700 text-sm font-bold mb-2">Advance Payment</label>
+                            <select id="advanceFilter" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-teal-500">
+                                <option value="">All Students</option>
+                                <option value="has">Has Advance</option>
+                                <option value="none">No Advance</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Students Table -->
                     </div>
                 </div>
                 <div class="overflow-x-auto -mx-4 sm:mx-0">
@@ -281,9 +423,11 @@ $result = $conn->query("
                             <table id="studentsTable" class="divide-y divide-gray-200 display" style="width:100%">
                                 <thead class="bg-gray-50">
                                     <tr>
+                                        <th scope="col" class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                                         <th scope="col" class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                                         <th scope="col" class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Photo</th>
                                         <th scope="col" class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Class</th>
+                                        <th scope="col" class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stream</th>
                                         <th scope="col" class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Batch</th>
                                         <th scope="col" class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Roll No</th>
                                         <th scope="col" class="px-3 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Balance</th>
@@ -299,6 +443,7 @@ $result = $conn->query("
                                         <tr class="hover:bg-gray-50 transition"
                                             data-status="<?php echo $row['is_active'] ? 'Active' : 'Inactive'; ?>"
                                             style="<?php echo !$row['is_active'] ? 'background-color: #fef2f2 !important;' : ''; ?>">
+                                            <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500"><?php echo htmlspecialchars($row['id']); ?></td>
                                             <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"><?php echo htmlspecialchars($row['name']); ?></td>
                                             <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                 <?php if ($row['photo']): ?>
@@ -311,6 +456,7 @@ $result = $conn->query("
                                                 <?php endif; ?>
                                             </td>
                                             <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500"><?php echo htmlspecialchars($row['class']); ?></td>
+                                            <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500"><?php echo htmlspecialchars($row['stream'] ?: 'N/A'); ?></td>
                                             <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500"><?php echo htmlspecialchars($row['batch']); ?></td>
                                             <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500"><?php echo htmlspecialchars($row['roll_number'] ?: 'N/A'); ?></td>
                                             <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-medium <?php 
@@ -337,7 +483,7 @@ $result = $conn->query("
                                                 ₹<?php echo number_format($advance, 2); ?>
                                             </td>
                                             <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500"><?php echo htmlspecialchars($row['phone']); ?></td>
-                                            <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                            <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-medium" data-order="<?php echo $row['is_active'] ? '1' : '0'; ?>">
                                                 <button
                                                     onclick="toggleStudentStatus(<?php echo $row['id']; ?>, <?php echo $row['is_active']; ?>, this)"
                                                     class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 <?php echo $row['is_active'] ? 'bg-teal-600' : 'bg-gray-300'; ?>"
@@ -350,7 +496,7 @@ $result = $conn->query("
                                                 <button onclick='generateQR("STU-<?php echo $row['id']; ?>", "<?php echo htmlspecialchars($row['name']); ?>", "<?php echo htmlspecialchars($row['batch']); ?>", "<?php echo htmlspecialchars($row['roll_number'] ?: 'NA'); ?>", "<?php echo htmlspecialchars($row['class']); ?>")' class="text-blue-600 hover:text-blue-900 font-bold text-xs sm:text-sm">QR</button>
                                             </td>
                                             <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                                <div class="flex flex-wrap gap-2">
+                                                <div class="flex gap-2">
                                                     <button type="button" class="payment-btn text-green-600 hover:text-green-900 font-bold text-xs sm:text-sm" data-student-id="<?php echo $row['id']; ?>" data-student-name="<?php echo htmlspecialchars($row['name']); ?>" data-student-fee="<?php echo htmlspecialchars(json_encode($row), ENT_QUOTES, 'UTF-8'); ?>">Pay</button>
                                                     <button onclick='viewStudent(<?php echo htmlspecialchars(json_encode($row), ENT_QUOTES, 'UTF-8'); ?>)' class="text-indigo-600 hover:text-indigo-900 font-bold text-xs sm:text-sm">More</button>
                                                     <button onclick='openEditModal(<?php echo htmlspecialchars(json_encode($row), ENT_QUOTES, 'UTF-8'); ?>)' class="text-teal-600 hover:text-teal-900 font-bold text-xs sm:text-sm">Edit</button>

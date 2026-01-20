@@ -5,9 +5,30 @@
 // Determine current page for active highlighting
 $current_page = basename($_SERVER['PHP_SELF']);
 $is_subscribed = isSubscribed($org_id);
+
+// Fetch admin contact details (first admin)
+$contact_email = '';
+$contact_phone = '';
+$contact_address = '';
+$adminStmt = $conn->prepare("SELECT contact_email, contact_phone, contact_address FROM admins ORDER BY id ASC LIMIT 1");
+if ($adminStmt) {
+    $adminStmt->execute();
+    $adminStmt->bind_result($contact_email, $contact_phone, $contact_address);
+    $adminStmt->fetch();
+    $adminStmt->close();
+}
 ?>
 <!DOCTYPE html>
 <style>
+    /* Fixed navbar */
+    nav.fixed-navbar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+    }
+    
     /* Dropdown styles */
     .dropdown { position: relative; display: inline-block; }
     .dropdown-content {
@@ -64,9 +85,68 @@ $is_subscribed = isSubscribed($org_id);
             background-color: rgba(255, 255, 255, 0.2);
         }
     }
+
+    /* Contact banner with cards */
+    @keyframes slideInLeft {
+        from { transform: translateX(-100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    
+    @keyframes slideInRight {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+    
+    @keyframes slideInCenter {
+        from { transform: scale(0.8); opacity: 0; }
+        to { transform: scale(1); opacity: 1; }
+    }
+    
+    .contact-banner-wrapper {
+        position: fixed;
+        top: 64px;
+        left: 0;
+        right: 0;
+        z-index: 999;
+        background: linear-gradient(135deg, #0f766e 0%, #0d9488 100%);
+        padding: 0.75rem 0 1rem 0;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        margin-bottom: 1.5rem;
+    }
+    
+    .contact-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 0.5rem;
+        padding: 0.75rem 1rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+    }
+    
+    .contact-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+    
+    .contact-card:nth-child(1) { animation: slideInLeft 0.5s ease-out; }
+    .contact-card:nth-child(2) { animation: slideInCenter 0.5s ease-out 0.1s backwards; }
+    .contact-card:nth-child(3) { animation: slideInRight 0.5s ease-out 0.2s backwards; }
+    
+    .contact-icon-wrapper {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #14b8a6, #0d9488);
+        box-shadow: 0 2px 4px rgba(13, 148, 136, 0.3);
+    }
+    
+    body { padding-top: 140px; }
 </style>
 
-<nav class="bg-teal-600 shadow-lg">
+<nav class="bg-teal-600 shadow-lg fixed-navbar">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center h-16">
             <div class="flex items-center">
@@ -80,6 +160,7 @@ $is_subscribed = isSubscribed($org_id);
                     <a href="subscribe.php" class="text-white hover:text-teal-100 font-medium transition <?php echo $current_page === 'subscribe.php' ? 'text-teal-100' : ''; ?>">Subscription</a>
                 <?php else: ?>
                     <a href="subscribe.php" class="text-white hover:text-teal-100 font-medium transition <?php echo $current_page === 'subscribe.php' ? 'text-teal-100' : ''; ?>">Subscription</a>
+                    <a href="org_details.php" class="text-white hover:text-teal-100 font-medium transition <?php echo $current_page === 'org_details.php' ? 'text-teal-100' : ''; ?>">Organization</a>
                     <a href="students.php" class="text-white hover:text-teal-100 font-medium transition <?php echo $current_page === 'students.php' ? 'text-teal-100' : ''; ?>">Students</a>
                     <a href="employees.php" class="text-white hover:text-teal-100 font-medium transition <?php echo $current_page === 'employees.php' ? 'text-teal-100' : ''; ?>">Employees</a>
                     <div class="dropdown">
@@ -134,6 +215,56 @@ $is_subscribed = isSubscribed($org_id);
         </div>
     </div>
 </nav>
+
+<!-- Contact Banner with Cards -->
+<div class="contact-banner-wrapper">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <?php if ($contact_email): ?>
+                <div class="contact-card flex items-center gap-3">
+                    <div class="contact-icon-wrapper">
+                        <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path>
+                            <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path>
+                        </svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-xs text-gray-500 font-medium uppercase tracking-wider">Email</p>
+                        <p class="text-sm text-gray-900 font-semibold truncate"><?php echo htmlspecialchars($contact_email); ?></p>
+                    </div>
+                </div>
+            <?php endif; ?>
+            
+            <?php if ($contact_phone): ?>
+                <div class="contact-card flex items-center gap-3">
+                    <div class="contact-icon-wrapper">
+                        <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"></path>
+                        </svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-xs text-gray-500 font-medium uppercase tracking-wider">Phone</p>
+                        <p class="text-sm text-gray-900 font-semibold truncate"><?php echo htmlspecialchars($contact_phone); ?></p>
+                    </div>
+                </div>
+            <?php endif; ?>
+            
+            <?php if ($contact_address): ?>
+                <div class="contact-card flex items-center gap-3">
+                    <div class="contact-icon-wrapper">
+                        <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path>
+                        </svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-xs text-gray-500 font-medium uppercase tracking-wider">Address</p>
+                        <p class="text-sm text-gray-900 font-semibold truncate"><?php echo htmlspecialchars($contact_address); ?></p>
+                    </div>
+                </div>
+            <?php endif; ?>
+        </div>
+    </div>
+</div>
 
 <script>
     // Mobile menu toggle

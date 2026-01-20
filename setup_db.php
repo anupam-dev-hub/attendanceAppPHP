@@ -34,7 +34,10 @@ SET FOREIGN_KEY_CHECKS = 1;
 CREATE TABLE IF NOT EXISTS admins (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
-    password VARCHAR(255) NOT NULL
+    password VARCHAR(255) NOT NULL,
+    contact_email VARCHAR(100) DEFAULT NULL,
+    contact_phone VARCHAR(20) DEFAULT NULL,
+    contact_address TEXT DEFAULT NULL
 );
 
 -- Organizations Table
@@ -126,7 +129,7 @@ CREATE TABLE IF NOT EXISTS students (
     remark TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE
-);
+) AUTO_INCREMENT=78549;
 
 -- Student Documents
 CREATE TABLE IF NOT EXISTS student_documents (

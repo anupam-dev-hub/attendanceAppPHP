@@ -36,60 +36,71 @@ function toggleCommunityOther() {
     }
 }
 
+var table; // Global table variable
+
 $(document).ready(function () {
-    var table = $('#studentsTable').DataTable({
+    table = $('#studentsTable').DataTable({
         responsive: true,
         "pageLength": 10,
         "lengthMenu": [[10, 25, 50, -1], [10, 25, 50, "All"]],
         "order": [
-            [2, "asc"],
-            [4, "asc"]
-        ], // Sort by Class (col 2) then Roll No (col 4)
+            [10, "desc"],  // Sort by Status (col 10) - Active (1) first, then Inactive (0)
+            [3, "asc"],   // Then by Class (col 3)
+            [6, "asc"]    // Then by Roll No (col 6)
+        ],
         "columnDefs": [
             {
                 "orderable": false,
-                "targets": [1, 7, 8, 9]
-            }, // Photo, Status, QR Code, and Actions columns not sortable
+                "targets": [2, 11, 12]
+            }, // Photo, QR Code, and Actions columns not sortable
             {
                 "responsivePriority": 1,
-                "targets": 0
+                "targets": 1
             }, // Name - always visible
             {
                 "responsivePriority": 2,
-                "targets": 9
+                "targets": 12
             }, // Actions - always visible
             {
                 "responsivePriority": 10001,
-                "targets": 1
+                "targets": 2
             }, // Photo - hide first
             {
                 "responsivePriority": 10002,
-                "targets": 5
+                "targets": 7
             }, // Balance - hide second
             {
                 "responsivePriority": 10003,
-                "targets": 6
+                "targets": 9
             }, // Phone - hide third
             {
                 "responsivePriority": 10004,
-                "targets": 8
+                "targets": 11
             }, // QR - hide fourth
             {
                 "responsivePriority": 3,
-                "targets": 2
+                "targets": 3
             }, // Class - keep visible longer
             {
                 "responsivePriority": 4,
-                "targets": 3
-            }, // Batch - keep visible longer
+                "targets": 4
+            }, // Stream - keep visible longer
             {
                 "responsivePriority": 5,
-                "targets": 7
-            }, // Status - keep visible longer
+                "targets": 5
+            }, // Batch - keep visible longer
             {
                 "responsivePriority": 6,
-                "targets": 4
-            } // Roll No - keep visible longer
+                "targets": 10
+            }, // Status - keep visible longer
+            {
+                "responsivePriority": 7,
+                "targets": 6
+            }, // Roll No - keep visible longer
+            {
+                "responsivePriority": 8,
+                "targets": 0
+            } // ID - keep visible
         ],
         "language": {
             "lengthMenu": "Show _MENU_ students",
@@ -98,6 +109,25 @@ $(document).ready(function () {
             "infoFiltered": "(filtered from _MAX_ total students)",
             "search": "Search:",
             "zeroRecords": "No matching students found"
+        },
+        initComplete: function () {
+            // Add column search inputs to relevant columns (ID, Name, Class, Stream, Batch, Roll No, Balance, Advance, Phone)
+            this.api().columns([0, 1, 3, 4, 5, 6, 7, 8, 9]).every(function () {
+                var column = this;
+                var title = $(column.header()).text();
+                
+                // Create input element
+                var input = $('<input type="text" placeholder="Search ' + title + '" class="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-teal-500 mt-1" />')
+                    .appendTo($(column.header()))
+                    .on('click', function(e) {
+                        e.stopPropagation(); // Prevent sorting when clicking input
+                    })
+                    .on('keyup change', function () {
+                        if (column.search() !== this.value) {
+                            column.search(this.value).draw();
+                        }
+                    });
+            });
         }
     });
     
@@ -120,18 +150,167 @@ $(document).ready(function () {
     $.fn.dataTable.ext.search.push(
         function (settings, data, dataIndex) {
             var statusFilter = $('#statusFilter').val();
-            if (statusFilter === '') {
-                return true; // Show all
-            }
+            var streamFilter = $('#streamFilter').val();
+            var districtFilter = $('#districtFilter').val();
+            var religionFilter = $('#religionFilter').val();
+            var communityFilter = $('#communityFilter').val();
+            var genderFilter = $('#genderFilter').val();
+            var nationalityFilter = $('#nationalityFilter').val();
+            var percentageFilter = $('#percentageFilter').val();
+            var balanceFilter = $('#balanceFilter').val();
+            var advanceFilter = $('#advanceFilter').val();
+            
             var row = table.row(dataIndex).node();
-            var rowStatus = $(row).attr('data-status');
-            return rowStatus === statusFilter;
+            var rowData = table.row(dataIndex).data();
+            
+            // Status filter
+            if (statusFilter !== '') {
+                var rowStatus = $(row).attr('data-status');
+                if (rowStatus !== statusFilter) return false;
+            }
+            
+            // Get student data from row attributes
+            var studentDataAttr = $(row).find('.payment-btn').attr('data-student-fee');
+            var studentData = null;
+            if (studentDataAttr) {
+                try {
+                    studentData = JSON.parse(studentDataAttr);
+                } catch(e) {}
+            }
+            
+            // Stream filter
+            if (streamFilter !== '' && studentData) {
+                if ((studentData.stream || '') !== streamFilter) return false;
+            }
+            
+            // Native District filter
+            if (districtFilter !== '' && studentData) {
+                if ((studentData.native_district || '') !== districtFilter) return false;
+            }
+            
+            // Religion filter
+            if (religionFilter !== '' && studentData) {
+                if ((studentData.religion || '') !== religionFilter) return false;
+            }
+            
+            // Community filter
+            if (communityFilter !== '' && studentData) {
+                if ((studentData.community || '') !== communityFilter) return false;
+            }
+            
+            // Gender filter
+            if (genderFilter !== '' && studentData) {
+                if ((studentData.sex || '') !== genderFilter) return false;
+            }
+            
+            // Nationality filter
+            if (nationalityFilter !== '' && studentData) {
+                if ((studentData.nationality || '') !== nationalityFilter) return false;
+            }
+            
+            // Percentage filter
+            if (percentageFilter !== '' && studentData) {
+                var percentage = parseFloat(studentData.exam_percentage) || 0;
+                var range = percentageFilter.split('-');
+                var min = parseFloat(range[0]);
+                var max = parseFloat(range[1]);
+                if (percentage < min || percentage > max) return false;
+            }
+            
+            // Balance filter
+            if (balanceFilter !== '' && studentData) {
+                var balance = parseFloat(studentData.net_balance) || 0;
+                if (balanceFilter === 'due' && balance >= 0) return false;
+                if (balanceFilter === 'paid' && balance <= 0) return false;
+                if (balanceFilter === 'clear' && balance !== 0) return false;
+            }
+            
+            // Advance filter
+            if (advanceFilter !== '' && studentData) {
+                var advance = parseFloat(studentData.advance_payment) || 0;
+                if (advanceFilter === 'has' && advance <= 0) return false;
+                if (advanceFilter === 'none' && advance > 0) return false;
+            }
+            
+            return true;
         }
     );
 
     $('#statusFilter').on('change', function () {
         table.draw();
+        updateActiveFilterCount();
     });
+    
+    // Stream filter
+    $('#streamFilter').on('change', function () {
+        $(this).removeClass('border-red-500', 'border-2');
+        table.draw();
+        updateActiveFilterCount();
+    });
+    
+    // Class filter - remove red border on change
+    $('#classFilter').on('change', function () {
+        $(this).removeClass('border-red-500', 'border-2');
+        updateActiveFilterCount();
+    });
+    
+    // Batch filter - remove red border on change
+    $('#batchFilter').on('change', function () {
+        $(this).removeClass('border-red-500', 'border-2');
+        updateActiveFilterCount();
+    });
+    
+    // Native District filter
+    $('#districtFilter').on('change', function() {
+        table.draw();
+        updateActiveFilterCount();
+    });
+    
+    // Religion filter
+    $('#religionFilter').on('change', function() {
+        table.draw();
+        updateActiveFilterCount();
+    });
+    
+    // Community filter
+    $('#communityFilter').on('change', function() {
+        table.draw();
+        updateActiveFilterCount();
+    });
+    
+    // Gender filter
+    $('#genderFilter').on('change', function() {
+        table.draw();
+        updateActiveFilterCount();
+    });
+    
+    // Nationality filter
+    $('#nationalityFilter').on('change', function() {
+        table.draw();
+        updateActiveFilterCount();
+    });
+    
+    // Percentage filter
+    $('#percentageFilter').on('change', function() {
+        table.draw();
+        updateActiveFilterCount();
+    });
+    
+    // Balance filter
+    $('#balanceFilter').on('change', function() {
+        table.draw();
+        updateActiveFilterCount();
+    });
+    
+    // Advance filter
+    $('#advanceFilter').on('change', function() {
+        table.draw();
+        updateActiveFilterCount();
+    });
+    
+    // Update existing filters to update count
+    $('#classFilter').on('change', updateActiveFilterCount);
+    $('#batchFilter').on('change', updateActiveFilterCount);
 
     // Handle payment button clicks via event delegation
     $(document).on('click', 'button.payment-btn', function(e) {
@@ -2151,12 +2330,35 @@ function toggleStudentStatus(studentId, currentStatus, buttonElement) {
 function deactivateClassBatch() {
     const classVal = document.getElementById('classFilter').value;
     const batchVal = document.getElementById('batchFilter').value;
+    const streamVal = document.getElementById('streamFilter').value;
 
-    if (!classVal || !batchVal) {
+    // Remove any existing red borders
+    document.getElementById('classFilter').classList.remove('border-red-500', 'border-2');
+    document.getElementById('batchFilter').classList.remove('border-red-500', 'border-2');
+    document.getElementById('streamFilter').classList.remove('border-red-500', 'border-2');
+
+    if (!classVal || !batchVal || !streamVal) {
+        // Show the filters panel if hidden
+        const panel = document.getElementById('advancedFiltersPanel');
+        if (panel.classList.contains('hidden')) {
+            panel.classList.remove('hidden');
+        }
+        
+        // Add red border to empty filters
+        if (!classVal) {
+            document.getElementById('classFilter').classList.add('border-red-500', 'border-2');
+        }
+        if (!batchVal) {
+            document.getElementById('batchFilter').classList.add('border-red-500', 'border-2');
+        }
+        if (!streamVal) {
+            document.getElementById('streamFilter').classList.add('border-red-500', 'border-2');
+        }
+        
         Swal.fire({
             icon: 'warning',
-            title: 'Select Class & Batch',
-            text: 'Please select both Class and Batch to proceed.'
+            title: 'Select Class, Batch & Stream',
+            text: 'Please select Class, Batch and Stream to proceed.'
         });
         return;
     }
@@ -2171,8 +2373,9 @@ function deactivateClassBatch() {
         }
     });
 
-    // Fetch students matching the class and batch
-    fetch(`get_students_by_class_batch.php?class=${encodeURIComponent(classVal)}&batch=${encodeURIComponent(batchVal)}`)
+    // Fetch students matching the class, batch, and stream
+    let fetchUrl = `get_students_by_class_batch.php?class=${encodeURIComponent(classVal)}&batch=${encodeURIComponent(batchVal)}&stream=${encodeURIComponent(streamVal)}`;
+    fetch(fetchUrl)
         .then(res => res.json())
         .then(data => {
             if (!data.success) {
@@ -2191,20 +2394,21 @@ function deactivateClassBatch() {
                 Swal.fire({
                     icon: 'info',
                     title: 'No Active Students',
-                    text: `No active students found in ${classVal} - ${batchVal}`
+                    text: `No active students found in ${classVal} - ${batchVal} - ${streamVal}`
                 });
                 return;
             }
 
             // Build student list HTML
             let studentListHtml = `<div class="text-left mb-3">
-                <p class="mb-2"><strong>${count} active student${count === 1 ? '' : 's'}</strong> in <strong>${classVal}</strong> - <strong>${batchVal}</strong> will be deactivated:</p>
+                <p class="mb-2"><strong>${count} active student${count === 1 ? '' : 's'}</strong> in <strong>${classVal}</strong> - <strong>${batchVal}</strong> - <strong>${streamVal}</strong> will be deactivated:</p>
                 <div class="max-h-60 overflow-y-auto border border-gray-300 rounded p-3 bg-gray-50">
                     <ul class="list-disc list-inside space-y-1">`;
             
             students.forEach(student => {
                 const rollNo = student.roll_number || 'N/A';
-                studentListHtml += `<li class="text-sm"><strong>${student.name}</strong> (Roll: ${rollNo})</li>`;
+                const stream = student.stream ? ` - ${student.stream}` : '';
+                studentListHtml += `<li class="text-sm"><strong>${student.name}</strong> (Roll: ${rollNo}${stream})</li>`;
             });
             
             studentListHtml += `</ul></div></div>`;
@@ -2223,14 +2427,20 @@ function deactivateClassBatch() {
             }).then((result) => {
                 if (!result.isConfirmed) return;
 
-                const btn = document.getElementById('deactivateClassBatchBtn');
-                const originalText = btn.innerText;
-                btn.disabled = true;
-                btn.innerText = 'Processing...';
+                // Show loading state
+                Swal.fire({
+                    title: 'Processing...',
+                    text: 'Deactivating students',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
 
                 const formData = new FormData();
                 formData.append('class', classVal);
                 formData.append('batch', batchVal);
+                formData.append('stream', streamVal);
 
                 fetch('deactivate_class_batch.php', {
                     method: 'POST',
@@ -2265,10 +2475,6 @@ function deactivateClassBatch() {
                             title: 'Error',
                             text: 'An unexpected error occurred.'
                         });
-                    })
-                    .finally(() => {
-                        btn.disabled = false;
-                        btn.innerText = originalText;
                     });
             });
         })
@@ -2334,6 +2540,56 @@ function collectFeeData() {
     });
     
     return Object.keys(feeData).length > 0 ? JSON.stringify(feeData) : null;
+}
+
+// Advanced Filters Functions
+function toggleAdvancedFilters() {
+    const panel = document.getElementById('advancedFiltersPanel');
+    panel.classList.toggle('hidden');
+}
+
+function clearAllFilters() {
+    // Reset all filter selects
+    document.getElementById('classFilter').value = '';
+    document.getElementById('batchFilter').value = '';
+    document.getElementById('streamFilter').value = '';
+    document.getElementById('statusFilter').value = '';
+    document.getElementById('districtFilter').value = '';
+    document.getElementById('religionFilter').value = '';
+    document.getElementById('communityFilter').value = '';
+    document.getElementById('genderFilter').value = '';
+    document.getElementById('nationalityFilter').value = '';
+    document.getElementById('percentageFilter').value = '';
+    document.getElementById('balanceFilter').value = '';
+    document.getElementById('advanceFilter').value = '';
+    
+    // Trigger redraw
+    table.draw();
+    updateActiveFilterCount();
+}
+
+function updateActiveFilterCount() {
+    const filters = [
+        'classFilter', 'batchFilter', 'streamFilter', 'statusFilter', 'districtFilter',
+        'religionFilter', 'communityFilter', 'genderFilter', 'nationalityFilter',
+        'percentageFilter', 'balanceFilter', 'advanceFilter'
+    ];
+    
+    let count = 0;
+    filters.forEach(id => {
+        const elem = document.getElementById(id);
+        if (elem && elem.value !== '') count++;
+    });
+    
+    const badge = document.getElementById('activeFiltersCount');
+    if (badge) {
+        if (count > 0) {
+            badge.textContent = count;
+            badge.classList.remove('hidden');
+        } else {
+            badge.classList.add('hidden');
+        }
+    }
 }
 
 // Populate fees in edit modal

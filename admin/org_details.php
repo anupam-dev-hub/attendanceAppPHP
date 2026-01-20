@@ -37,6 +37,33 @@ $docs = $docStmt->get_result();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Organization Details</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .dropdown { position: relative; display: inline-block; }
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #fff;
+            min-width: 200px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1000;
+            border-radius: 0.375rem;
+            margin-top: 0.5rem;
+            top: 100%;
+            right: 0;
+        }
+        .dropdown-content a {
+            color: #1f2937;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            transition: background-color 0.2s;
+            font-size: 0.875rem;
+        }
+        .dropdown-content a:hover { background-color: #f3f4f6; }
+        .dropdown:hover .dropdown-content { display: block; }
+        .dropdown.open .dropdown-content { display: block; }
+        .dropdown-btn { cursor: pointer; }
+    </style>
 </head>
 <body class="bg-gray-50 font-sans antialiased">
     <nav class="bg-blue-600 shadow-lg">
@@ -59,7 +86,15 @@ $docs = $docStmt->get_result();
                             </span>
                         <?php endif; ?>
                     </a>
-                    <a href="settings.php" class="text-white hover:text-blue-100 font-medium transition">Settings</a>
+                    <div class="dropdown">
+                        <span class="dropdown-btn text-white hover:text-blue-100 font-medium transition">
+                            Settings ▾
+                        </span>
+                        <div class="dropdown-content">
+                            <a href="settings.php">Payment Settings</a>
+                            <a href="contact_settings.php">Contact Details</a>
+                        </div>
+                    </div>
                     <a href="../logout.php" class="text-white hover:text-red-200 font-medium transition">Logout</a>
                 </div>
             </div>
@@ -67,9 +102,17 @@ $docs = $docStmt->get_result();
     </nav>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div class="mb-8">
-            <h2 class="text-3xl font-bold text-gray-900"><?php echo htmlspecialchars($org['name']); ?></h2>
-            <p class="mt-2 text-sm text-gray-600">Detailed information about the organization.</p>
+        <div class="mb-8 flex items-center justify-between">
+            <div>
+                <h2 class="text-3xl font-bold text-gray-900"><?php echo htmlspecialchars($org['name']); ?></h2>
+                <p class="mt-2 text-sm text-gray-600">Detailed information about the organization.</p>
+            </div>
+            <a href="edit_org.php?id=<?php echo $id; ?>" class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded shadow focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                </svg>
+                Edit Organization
+            </a>
         </div>
 
         <div class="bg-white shadow overflow-hidden sm:rounded-lg">
@@ -148,4 +191,44 @@ $docs = $docStmt->get_result();
         </div>
     </div>
 </body>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const dropdowns = document.querySelectorAll('.dropdown');
+        const closeAll = () => dropdowns.forEach(d => d.classList.remove('open'));
+        const openDropdown = (dd) => {
+            closeAll();
+            dd.classList.add('open');
+        };
+
+        dropdowns.forEach(dd => {
+            const btn = dd.querySelector('.dropdown-btn');
+            const content = dd.querySelector('.dropdown-content');
+            if (!btn || !content) return;
+
+            btn.addEventListener('mouseenter', function() {
+                openDropdown(dd);
+            });
+
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const isOpen = dd.classList.contains('open');
+                if (isOpen) {
+                    closeAll();
+                } else {
+                    openDropdown(dd);
+                }
+            });
+
+            content.addEventListener('click', function(e) {
+                e.stopPropagation();
+                closeAll();
+            });
+        });
+
+        document.addEventListener('click', function() {
+            closeAll();
+        });
+    });
+</script>
 </html>
